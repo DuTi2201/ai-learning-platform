@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Container,
   Paper,
@@ -11,7 +10,6 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
-import { Layout } from '../components/layout/Layout';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
@@ -35,101 +33,97 @@ export const Profile: React.FC = () => {
 
   if (!user) {
     return (
-      <Layout maxWidth="md">
-        <StyledPaper>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
-            <Typography variant="body1" color="text.secondary">
-              Đang tải thông tin người dùng...
-            </Typography>
-          </Box>
-        </StyledPaper>
-      </Layout>
+        <Container maxWidth="md" sx={{ py: 4 }}>
+          <Typography variant="h4" align="center">
+            Vui lòng đăng nhập để xem thông tin cá nhân
+          </Typography>
+        </Container>
     );
   }
 
   return (
-    <Layout maxWidth="md">
-      <StyledPaper>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
-          <ProfileAvatar
-            src={user.profilePictureUrl || undefined}
-            alt={user.fullName}
-          >
-            {!user.profilePictureUrl && user.fullName.charAt(0).toUpperCase()}
-          </ProfileAvatar>
-          <Typography variant="h4" sx={{ mt: 2, mb: 1, fontWeight: 600 }}>
-            {user.fullName}
-          </Typography>
-          <Chip
-            label={user.role === 'ADMIN' ? 'Quản trị viên' : user.role === 'INSTRUCTOR' ? 'Giảng viên' : 'Học viên'}
-            color={user.role === 'ADMIN' ? 'error' : user.role === 'INSTRUCTOR' ? 'warning' : 'primary'}
-            variant="outlined"
-          />
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
-        <Grid container spacing={3}>
-          <Grid size = {{xs:12, md:6}} >  
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              Thông tin cá nhân
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <StyledPaper>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
+            <ProfileAvatar
+              src={user.profilePictureUrl || undefined}
+              alt={user.fullName}
+            >
+              {!user.profilePictureUrl && user.fullName.charAt(0).toUpperCase()}
+            </ProfileAvatar>
+            <Typography variant="h4" sx={{ mt: 2, mb: 1, fontWeight: 600 }}>
+              {user.fullName}
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Email
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {user.email}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Họ và tên
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {user.fullName}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Vai trò
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {user.role === 'ADMIN' ? 'Quản trị viên' : user.role === 'INSTRUCTOR' ? 'Giảng viên' : 'Học viên'}
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
+            <Chip
+              label={user.role === 'ADMIN' ? 'Quản trị viên' : user.role === 'INSTRUCTOR' ? 'Giảng viên' : 'Học viên'}
+              color={user.role === 'ADMIN' ? 'error' : user.role === 'INSTRUCTOR' ? 'warning' : 'primary'}
+              variant="outlined"
+            />
+          </Box>
 
-          <Grid size = {{xs:12, md:6}} >
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              Thống kê học tập
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Trạng thái tài khoản
-                </Typography>
-                <Chip
-                  label="Đang hoạt động"
-                  color="success"
-                  size="small"
-                  variant="outlined"
-                />
+          <Divider sx={{ my: 3 }} />
+
+          <Grid container spacing={3}>
+            <Grid size = {{xs:12, md:6}} >  
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                Thông tin cá nhân
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Email
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    {user.email}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Họ và tên
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    {user.fullName}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Vai trò
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    {user.role === 'ADMIN' ? 'Quản trị viên' : user.role === 'INSTRUCTOR' ? 'Giảng viên' : 'Học viên'}
+                  </Typography>
+                </Box>
               </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Ngày tham gia
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {new Date().toLocaleDateString('vi-VN')}
-                </Typography>
+            </Grid>
+
+            <Grid size = {{xs:12, md:6}} >
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                Thống kê học tập
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Trạng thái tài khoản
+                  </Typography>
+                  <Chip
+                    label="Đang hoạt động"
+                    color="success"
+                    size="small"
+                    variant="outlined"
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Ngày tham gia
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    {new Date().toLocaleDateString('vi-VN')}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
+            </Grid>
           </Grid>
-        </Grid>
-      </StyledPaper>
-    </Layout>
+        </StyledPaper>
+      </Container>
   );
 };
