@@ -11,6 +11,7 @@ import { Home } from './pages/Home';
 import { Courses } from './pages/Courses';
 import { CourseDetail } from './pages/CourseDetail';
 import { Dashboard } from './pages/Dashboard';
+import { Profile } from './pages/Profile';
 import { AuthCallback } from './pages/AuthCallback';
 
 // Create a client
@@ -55,27 +56,34 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
   );
 };
 
-// Main App Component
-const App: React.FC = () => {
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <CustomThemeProvider>
         <CssBaseline />
-        <Router>
-          <AuthProvider>
+        <AuthProvider>
+          <Router>
             <AppRoutes />
-          </AuthProvider>
-        </Router>
+          </Router>
+        </AuthProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </CustomThemeProvider>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;
