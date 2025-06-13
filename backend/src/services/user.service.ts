@@ -1,3 +1,4 @@
+import { PrismaClient } from '@prisma/client';
 import { prisma } from '../config/database';
 import { AppError } from '../types';
 import {
@@ -28,7 +29,7 @@ export class UserService {
       where.role = role;
     }
 
-    const [users, total] = await Promise.all([
+    const [usersWithCounts, total] = await Promise.all([
       prisma.user.findMany({
         where,
         skip,
@@ -44,7 +45,7 @@ export class UserService {
           _count: {
             select: {
               enrollments: true,
-              lessonProgress: true,
+              lessonProgress: { where: { status: 'COMPLETED' } }, // Corrected status to uppercase
             },
           },
         },
@@ -55,7 +56,9 @@ export class UserService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: users,
+      success: true,
+      message: 'Users retrieved successfully',
+      data: usersWithCounts,
       pagination: {
         page,
         limit,
@@ -69,16 +72,28 @@ export class UserService {
 
   // Get user by ID
   static async getUserById(userId: string, includePrivate: boolean = false) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: includePrivate ? {
+    let includeOptions = {};
+    if (includePrivate) {
+      includeOptions = {
         enrollments: {
           include: {
-            course: true,
+            course: {
+              select: {
+                id: true,
+                title: true,
+                courseCode: true, // As per designDB.md
+                // Add other fields if needed from Course table
+              },
+            },
           },
-          orderBy: { enrollmentDate: 'desc' },
+          orderBy: { enrollment_date: 'desc' },
         },
-      } : undefined,
+      };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: Object.keys(includeOptions).length > 0 ? includeOptions : undefined,
     });
 
     if (!user) {
@@ -99,7 +114,7 @@ export class UserService {
         role: true,
         profilePictureUrl: true,
         createdAt: true,
-        updatedAt: true,
+        // updatedAt: true, // Removed as it's not in designDB.md
       },
     });
 
@@ -118,15 +133,15 @@ export class UserService {
     const user = await prisma.user.upsert({
       where: { email },
       update: {
-        fullName,
+          fullName,
         profilePictureUrl,
       },
       create: {
-        email,
-        fullName,
+          email,
+          fullName,
         profilePictureUrl,
         googleId,
-        role: UserRole.USER, // Default role
+        role: UserRole.USER, // Corrected: Use UserRole enum
       },
     });
 
@@ -210,12 +225,12 @@ export class UserService {
     await prisma.$transaction(async (tx) => {
       // Delete user progress
       await tx.lessonProgress.deleteMany({
-        where: { userId },
+        where: { userId: userId }, // Corrected to userId
       });
 
       // Delete user enrollments
       await tx.enrollment.deleteMany({
-        where: { userId },
+        where: { userId: userId }, // Corrected to userId
       });
 
       // Delete user
@@ -227,8 +242,9 @@ export class UserService {
     return { message: 'User deleted successfully' };
   }
 
-  // Get user progress
+  // Get user's learning progress
   static async getUserProgress(userId: string) {
+    // Check if user exists
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -238,26 +254,47 @@ export class UserService {
     }
 
     const progress = await prisma.lessonProgress.findMany({
-      where: { userId },
+      where: { userId: userId }, // Corrected to userId
       include: {
         lesson: {
-          include: {
+          select: {
+            id: true,
+            title: true,
+            lessonOrder: true,
             module: {
-              include: {
-                course: true,
+              select: {
+                id: true,
+                title: true,
+                moduleOrder: true,
+                course: {
+                  select: {
+                    id: true,
+                    courseCode: true,
+                    title: true,
+                  },
+                },
               },
             },
           },
         },
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: {
+        lesson: {
+          module: {
+            course: {
+              title: 'asc',
+            },
+          },
+        },
+      },
     });
 
     return progress;
   }
 
-  // Get user enrolled courses
+  // Get user's enrolled courses with progress
   static async getUserEnrolledCourses(userId: string) {
+    // Check if user exists
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -270,26 +307,19 @@ export class UserService {
       where: { userId },
       include: {
         course: {
-          include: {
+          select: {
+            id: true,
+            courseCode: true,
+            title: true,
+            description: true,
             modules: {
-              include: {
+              select: {
+                id: true,
                 lessons: {
-                  include: {
-                    _count: {
-                      select: {
-                        progress: {
-                          where: { userId },
-                        },
-                      },
-                    },
+                  select: {
+                    id: true,
                   },
                 },
-              },
-              orderBy: { moduleOrder: 'asc' },
-            },
-            _count: {
-              select: {
-                enrollments: true,
               },
             },
           },
@@ -298,11 +328,49 @@ export class UserService {
       orderBy: { enrollmentDate: 'desc' },
     });
 
-    return enrollments;
+    // Calculate progress for each course
+    const coursesWithProgress = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        const totalLessons = enrollment.course.modules.reduce(
+          (total, module) => total + module.lessons.length,
+          0
+        );
+
+        const completedLessons = await prisma.lessonProgress.count({
+          where: {
+            userId: userId, // Corrected to userId
+            lesson: {
+              module: {
+                courseId: enrollment.course.id,
+              },
+            },
+            status: 'COMPLETED', // Corrected status to uppercase
+          },
+        });
+
+        const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+
+        return {
+          ...enrollment,
+          course: {
+            ...enrollment.course,
+            modules: undefined, // Remove modules from response
+          },
+          progress: {
+            totalLessons,
+            completedLessons,
+            progressPercentage: Math.round(progressPercentage * 100) / 100,
+          },
+        };
+      })
+    );
+
+    return coursesWithProgress;
   }
 
   // Get user statistics
   static async getUserStats(userId: string) {
+    // Check if user exists
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -311,45 +379,32 @@ export class UserService {
       throw new AppError('User not found', 404);
     }
 
-    const [enrollmentsCount, completedLessonsCount, totalLessonsCount] = await Promise.all([
-      // Total enrolled courses
+    const [enrollmentsCount, completedLessonsCount, totalProgressCount] = await Promise.all([
       prisma.enrollment.count({
-        where: { userId },
+        where: { userId: userId }, // Corrected to userId
       }),
-      // Completed lessons
       prisma.lessonProgress.count({
         where: {
-          userId,
-          isCompleted: true,
+          userId: userId, // Corrected to userId
+          status: 'COMPLETED', // Corrected status to uppercase
         },
       }),
-      // Total lessons in enrolled courses
-      prisma.lesson.count({
-        where: {
-          module: {
-            course: {
-              enrollments: {
-                some: {
-                  userId,
-                },
-              },
-            },
-          },
-        },
+      prisma.lessonProgress.count({
+        where: { userId: userId }, // Corrected to userId
       }),
     ]);
 
-    const completionRate = totalLessonsCount > 0 
-      ? Math.round((completedLessonsCount / totalLessonsCount) * 100) 
-      : 0;
-
     return {
-      user,
+      user: {
+        id: user.id,
+        name: user.fullName,
+        email: user.email,
+        profilePictureUrl: user.profilePictureUrl,
+      },
       stats: {
         totalEnrollments: enrollmentsCount,
         completedLessons: completedLessonsCount,
-        totalLessons: totalLessonsCount,
-        completionRate,
+        completionRate: totalProgressCount > 0 ? (completedLessonsCount / totalProgressCount) * 100 : 0,
       },
     };
   }
