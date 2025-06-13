@@ -1,5 +1,4 @@
-import React from 'react';
-
+// Enums
 export enum UserRole {
   STUDENT = 'STUDENT',
   INSTRUCTOR = 'INSTRUCTOR',
@@ -49,101 +48,80 @@ export interface Course {
   id: string;
   courseCode: string;
   title: string;
-  description?: string;
-  tags: string[];
-  coverImageUrl?: string;
-  level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-  duration?: string;
-  instructor: {
-    id: string;
-    fullName: string;
-  };
-  modules: Module[];
-  createdAt: Date;
-}
-
-export interface CreateCourseRequest {
-  courseCode: string;
-  title: string;
-  description?: string;
+  description: string;
+  thumbnailUrl?: string;
   instructorId: string;
-  tags?: string[];
-  coverImageUrl?: string;
+  instructor?: User;
+  isPublished: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  modules?: Module[];
+  enrollments?: Enrollment[];
 }
 
-// Module types
 export interface Module {
   id: string;
-  title: string;
-  description?: string;
-  order: number;
-  lessons: Lesson[];
-}
-
-export interface CreateModuleRequest {
-  title: string;
-  description?: string;
   courseId: string;
-  order: number;
+  course?: Course;
+  title: string;
+  description?: string;
+  orderIndex: number;
+  createdAt: Date;
+  updatedAt: Date;
+  lessons?: Lesson[];
 }
 
-// Lesson types
 export interface Lesson {
   id: string;
+  moduleId: string;
+  module?: Module;
   title: string;
   description?: string;
   content?: string;
-  order: number;
-  estimatedDuration?: number;
-  resources: Resource[];
+  videoUrl?: string;
+  orderIndex: number;
+  duration?: number; // in minutes
+  createdAt: Date;
+  updatedAt: Date;
+  resources?: Resource[];
+  progress?: LessonProgress[];
 }
 
-export interface CreateLessonRequest {
-  title: string;
-  content?: string;
-  moduleId: string;
-  order: number;
-  estimatedDuration?: number;
-}
-
-// Resource types
 export interface Resource {
   id: string;
-  resourceType: ResourceType;
-  title: string;
-  url: string;
-  deadline?: Date;
-}
-
-export interface CreateResourceRequest {
-  resourceType: ResourceType;
-  title: string;
-  url: string;
   lessonId: string;
-  deadline?: Date;
+  lesson?: Lesson;
+  title: string;
+  description?: string;
+  type: ResourceType;
+  url: string;
+  fileSize?: number; // in bytes
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// Enrollment types
+// Progress tracking types
 export interface Enrollment {
   id: string;
-  enrollmentDate: Date;
-  course: {
-    id: string;
-    courseCode: string;
-    title: string;
-    description?: string;
-  };
+  userId: string;
+  user?: User;
+  courseId: string;
+  course?: Course;
+  enrolledAt: Date;
+  completedAt?: Date;
+  progress?: number; // percentage 0-100
 }
 
-// Progress types
-export interface Progress {
+export interface LessonProgress {
   id: string;
+  userId: string;
+  user?: User;
+  lessonId: string;
+  lesson?: Lesson;
   status: LessonStatus;
   completedAt?: Date;
-  lesson: {
-    id: string;
-    title: string;
-  };
+  timeSpent?: number; // in minutes
+  lastAccessedAt: Date;
 }
 
 // API Response types
@@ -151,24 +129,72 @@ export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
-}
-
-export interface PaginatedResponse<T> {
-  success: boolean;
-  message: string;
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
+  meta?: {
+    total?: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
   };
 }
 
-// Theme types
-export interface ThemeContextType {
-  isDarkMode: boolean;
-  toggleTheme: () => void;
+export interface ApiError {
+  success: false;
+  message: string;
+  error?: string;
+  details?: any;
+}
+
+// Form types
+export interface LoginFormData {
+  email: string;
+  password: string;
+}
+
+export interface CourseFormData {
+  courseCode: string;
+  title: string;
+  description: string;
+  thumbnailUrl?: string;
+}
+
+export interface ModuleFormData {
+  title: string;
+  description?: string;
+  orderIndex: number;
+}
+
+export interface LessonFormData {
+  title: string;
+  description?: string;
+  content?: string;
+  videoUrl?: string;
+  orderIndex: number;
+  duration?: number;
+}
+
+export interface ResourceFormData {
+  title: string;
+  description?: string;
+  type: ResourceType;
+  url: string;
+}
+
+// Component props types
+export interface CourseCardProps {
+  course: Course;
+  onEnroll?: (courseId: string) => void;
+  showEnrollButton?: boolean;
+}
+
+export interface ModuleCardProps {
+  module: Module;
+  onClick?: (moduleId: string) => void;
+}
+
+export interface LessonCardProps {
+  lesson: Lesson;
+  progress?: LessonProgress;
+  onClick?: (lessonId: string) => void;
 }
 
 // Auth types
@@ -176,7 +202,8 @@ export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: () => void;
-  logout: () => void;
+  logout: () => Promise<void>;
+  checkAuthStatus: () => Promise<void>;
 }
 
 // Query params

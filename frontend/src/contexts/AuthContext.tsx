@@ -1,27 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User, AuthContextType } from '../types';
 import { authService } from '../services/authService';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  avatar?: string;
-  role: 'student' | 'instructor' | 'admin';
-}
-
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  login: () => void;
-  logout: () => void;
-  isAuthenticated: boolean;
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
@@ -33,7 +18,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     checkAuthStatus();
@@ -41,13 +26,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
+      setIsLoading(true);
       const userData = await authService.getCurrentUser();
       setUser(userData);
     } catch (error) {
-      console.log('Not authenticated');
+      console.error('Auth check failed:', error);
       setUser(null);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -59,21 +45,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       await authService.logout();
-      setUser(null);
     } catch (error) {
-      console.error('Logout error:', error);
-      // Clear user anyway
+      console.error('Logout failed:', error);
+    } finally {
       setUser(null);
+      window.location.href = '/';
     }
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
-    loading,
+    isLoading,
     login,
     logout,
-    isAuthenticated: !!user,
+    checkAuthStatus,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
