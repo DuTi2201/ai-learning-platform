@@ -26,16 +26,33 @@ api.interceptors.request.use(
 
 export const resourceService = {
   async createResource(resourceData: CreateResourceRequest): Promise<Resource> {
-    const response = await api.post<ApiResponse<Resource>>('/resources', resourceData);
+    const response = await api.post<ApiResponse<Resource>>('/v1/resources', resourceData);
+    return response.data.data;
+  },
+
+  async bulkCreateResources(lessonId: string, resources: CreateResourceRequest[]): Promise<Resource[]> {
+    const response = await api.post<ApiResponse<Resource[]>>(`/v1/resources/lesson/${lessonId}/bulk`, {
+      resources
+    });
     return response.data.data;
   },
 
   async updateResource(id: string, resourceData: Partial<CreateResourceRequest>): Promise<Resource> {
-    const response = await api.put<ApiResponse<Resource>>(`/resources/${id}`, resourceData);
+    const response = await api.put<ApiResponse<Resource>>(`/v1/resources/${id}`, resourceData);
     return response.data.data;
   },
 
   async deleteResource(id: string): Promise<void> {
-    await api.delete(`/resources/${id}`);
+    await api.delete(`/v1/resources/${id}`);
+  },
+
+  async getResourceById(id: string): Promise<Resource> {
+    const response = await api.get<ApiResponse<Resource>>(`/v1/resources/${id}`);
+    return response.data.data;
+  },
+
+  async getResourcesByLessonId(lessonId: string): Promise<Resource[]> {
+    const response = await api.get<ApiResponse<Resource[]>>(`/v1/resources/lesson/${lessonId}`);
+    return response.data.data;
   },
 };

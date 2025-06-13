@@ -1,212 +1,165 @@
-// Enums
-export enum UserRole {
-  STUDENT = 'STUDENT',
-  INSTRUCTOR = 'INSTRUCTOR',
-  ADMIN = 'ADMIN',
-}
+// User related types
+export type UserRole = 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
 
-export enum ResourceType {
-  VIDEO = 'VIDEO',
-  PDF = 'PDF',
-  SLIDES = 'SLIDES',
-  ASSIGNMENT = 'ASSIGNMENT',
-  QUIZ = 'QUIZ',
-  DOCUMENT = 'DOCUMENT',
-  LINK = 'LINK',
-}
+export type ResourceType = 'VIDEO' | 'DOCUMENT' | 'LINK' | 'EXERCISE' | 'QUIZ';
 
-export enum LessonStatus {
-  NOT_STARTED = 'NOT_STARTED',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-}
+export type LessonStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
-// User types
 export interface User {
   id: string;
-  googleId: string;
   email: string;
-  fullName: string;
-  profilePictureUrl?: string;
+  name: string;
+  avatar?: string;
   role: UserRole;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface GoogleUser {
   id: string;
   email: string;
-  verified_email: boolean;
   name: string;
-  given_name: string;
-  family_name: string;
-  picture: string;
-  locale: string;
+  picture?: string;
 }
 
-// Course types
+// Course related types
 export interface Course {
   id: string;
-  courseCode: string;
   title: string;
   description: string;
-  thumbnailUrl?: string;
   instructorId: string;
-  instructor?: User;
-  isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
-  modules?: Module[];
-  enrollments?: Enrollment[];
 }
 
+export interface CreateCourseRequest {
+  title: string;
+  description: string;
+  instructorId: string;
+}
+
+// Module related types
 export interface Module {
   id: string;
-  courseId: string;
-  course?: Course;
   title: string;
-  description?: string;
+  description: string;
+  courseId: string;
   orderIndex: number;
   createdAt: Date;
   updatedAt: Date;
-  lessons?: Lesson[];
 }
 
+export interface CreateModuleRequest {
+  title: string;
+  description: string;
+  courseId: string;
+  orderIndex: number;
+}
+
+// Lesson related types
 export interface Lesson {
   id: string;
-  moduleId: string;
-  module?: Module;
   title: string;
-  description?: string;
-  content?: string;
-  videoUrl?: string;
-  orderIndex: number;
-  duration?: number; // in minutes
-  createdAt: Date;
-  updatedAt: Date;
-  resources?: Resource[];
-  progress?: LessonProgress[];
+  content: string;
+  module_id: string;
+  instructor_id: string;
+  order_index: number;
+  status?: LessonStatus;
+  created_at: Date;
+  updated_at: Date;
 }
 
+export interface CreateLessonRequest {
+  title: string;
+  content: string;
+  module_id: string;
+  instructor_id: string;
+  order_index: number;
+  status?: LessonStatus;
+}
+
+// Resource related types
 export interface Resource {
   id: string;
-  lessonId: string;
-  lesson?: Lesson;
   title: string;
-  description?: string;
-  type: ResourceType;
+  resourceType: ResourceType;
   url: string;
-  fileSize?: number; // in bytes
+  description?: string;
+  lessonId: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface CreateResourceRequest {
+  title: string;
+  resourceType: ResourceType;
+  url: string;
+  description?: string;
+  lessonId: string;
+}
+
+// Instructor related types
+export interface Instructor {
+  id: string;
+  name: string;
+  email: string;
+  bio?: string;
+  userId: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// Progress tracking types
+// Enrollment related types
 export interface Enrollment {
   id: string;
   userId: string;
-  user?: User;
   courseId: string;
-  course?: Course;
   enrolledAt: Date;
   completedAt?: Date;
-  progress?: number; // percentage 0-100
 }
 
-export interface LessonProgress {
+// Progress related types
+export interface Progress {
   id: string;
   userId: string;
-  user?: User;
   lessonId: string;
-  lesson?: Lesson;
-  status: LessonStatus;
+  completed: boolean;
   completedAt?: Date;
-  timeSpent?: number; // in minutes
-  lastAccessedAt: Date;
+  timeSpent?: number;
 }
 
 // API Response types
 export interface ApiResponse<T> {
   success: boolean;
-  message: string;
   data: T;
-  meta?: {
-    total?: number;
-    page?: number;
-    limit?: number;
-    totalPages?: number;
+  message?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
   };
 }
 
-export interface ApiError {
-  success: false;
-  message: string;
-  error?: string;
-  details?: any;
+// Theme related types
+export interface ThemeContextType {
+  darkMode: boolean;
+  toggleDarkMode: () => void;
 }
 
-// Form types
-export interface LoginFormData {
-  email: string;
-  password: string;
-}
-
-export interface CourseFormData {
-  courseCode: string;
-  title: string;
-  description: string;
-  thumbnailUrl?: string;
-}
-
-export interface ModuleFormData {
-  title: string;
-  description?: string;
-  orderIndex: number;
-}
-
-export interface LessonFormData {
-  title: string;
-  description?: string;
-  content?: string;
-  videoUrl?: string;
-  orderIndex: number;
-  duration?: number;
-}
-
-export interface ResourceFormData {
-  title: string;
-  description?: string;
-  type: ResourceType;
-  url: string;
-}
-
-// Component props types
-export interface CourseCardProps {
-  course: Course;
-  onEnroll?: (courseId: string) => void;
-  showEnrollButton?: boolean;
-}
-
-export interface ModuleCardProps {
-  module: Module;
-  onClick?: (moduleId: string) => void;
-}
-
-export interface LessonCardProps {
-  lesson: Lesson;
-  progress?: LessonProgress;
-  onClick?: (lessonId: string) => void;
-}
-
-// Auth types
+// Auth related types
 export interface AuthContextType {
   user: User | null;
-  isLoading: boolean;
-  login: () => void;
-  logout: () => Promise<void>;
-  checkAuthStatus: () => Promise<void>;
+  loading: boolean;
+  login: (token: string) => Promise<void>;
+  logout: () => void;
 }
 
-// Query params
+// Query parameters
 export interface QueryParams {
   page?: number;
   limit?: number;

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Course, CreateCourseRequest, ApiResponse, PaginatedResponse, QueryParams } from '../types';
+import { Course, CreateCourseRequest, ApiResponse, PaginatedResponse, QueryParams, Module } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -31,8 +31,6 @@ export const courseService = {
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.search) queryParams.append('search', params.search);
-    if (params?.category) queryParams.append('category', params.category);
-    if (params?.level) queryParams.append('level', params.level);
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
@@ -57,5 +55,10 @@ export const courseService = {
 
   async deleteCourse(id: string): Promise<void> {
     await api.delete(`/courses/${id}`);
+  },
+
+  async getCourseModules(courseId: string): Promise<Module[]> {
+    const response = await api.get<ApiResponse<Module[]>>(`/v1/courses/${courseId}/modules`);
+    return response.data.data;
   },
 };

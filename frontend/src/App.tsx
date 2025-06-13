@@ -1,39 +1,56 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { CssBaseline } from '@mui/material';
-import { CustomThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { Layout } from './components/layout/Layout';
-import { LoadingSpinner } from './components/common/LoadingSpinner';
-import { Home } from './pages/Home';
-import { Courses } from './pages/Courses';
-import { CourseDetail } from './pages/CourseDetail';
-import { Dashboard } from './pages/Dashboard';
-import { Profile } from './pages/Profile';
-import { AuthCallback } from './pages/AuthCallback';
-
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+import { ThemeProvider as CustomThemeProvider } from './contexts/ThemeContext';
+import Layout from './components/layout/Layout';
+import Home from './pages/Home';
+import AuthCallback from './pages/AuthCallback';
+import Courses from './pages/Courses';
+import CourseDetail from './pages/CourseDetail';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import AdminDashboard from './pages/AdminDashboard';
+import theme from './theme';
 
 // Protected Route Component
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
 
-  if (isLoading) {
-    return <LoadingSpinner fullScreen message="Đang kiểm tra xác thực..." />;
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
   }
 
   if (!user) {
     return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// Admin Route Component
+interface AdminRouteProps {
+  children: React.ReactNode;
+}
+
+const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (user.role !== 'ADMIN') {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
@@ -48,21 +65,29 @@ const AppRoutes: React.FC = () => {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/courses/:id" element={<CourseDetail />} />
-        <Route
-          path="/dashboard"
+        <Route 
+          path="/dashboard" 
           element={
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
-          }
+          } 
         />
-        <Route
-          path="/profile"
+        <Route 
+          path="/profile" 
           element={
             <ProtectedRoute>
               <Profile />
             </ProtectedRoute>
-          }
+          } 
+        />
+        <Route 
+          path="/admin" 
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          } 
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -70,20 +95,20 @@ const AppRoutes: React.FC = () => {
   );
 };
 
-function App() {
+// Main App Component
+const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <CustomThemeProvider>
+    <CustomThemeProvider>
+      <ThemeProvider theme={theme}>
         <CssBaseline />
         <AuthProvider>
           <Router>
             <AppRoutes />
           </Router>
         </AuthProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
-      </CustomThemeProvider>
-    </QueryClientProvider>
+      </ThemeProvider>
+    </CustomThemeProvider>
   );
-}
+};
 
 export default App;
