@@ -1,85 +1,91 @@
-// User types
-export type UserRole = 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
-
-export type ResourceType = 'DOCUMENT' | 'VIDEO' | 'LINK' | 'QUIZ';
-
-export type LessonStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
-
+// Auth types
 export interface User {
   id: string;
   email: string;
   fullName: string;
-  profilePictureUrl?: string;
-  role: UserRole;
-  createdAt: string;
-  updatedAt: string;
+  role: 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
+  avatar?: string;
+  createdAt: Date;
 }
 
-export interface GoogleUser {
-  id: string;
+export interface LoginRequest {
   email: string;
-  name: string;
-  picture?: string;
+  password: string;
 }
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  fullName: string;
+  role?: 'STUDENT' | 'INSTRUCTOR';
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+}
+
+// API Response types
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// Resource types
+export type ResourceType = 'VIDEO' | 'DOCUMENT' | 'LINK' | 'QUIZ';
 
 // Course types
 export interface Course {
   id: string;
+  courseCode: string;
   title: string;
-  description: string;
-  thumbnailUrl?: string;
-  instructorId: string;
-  instructor?: User;
-  isPublished: boolean;
-  createdAt: string;
-  updatedAt: string;
-  modules?: Module[];
-  _count?: {
-    modules: number;
-    enrollments: number;
+  description?: string;
+  tags?: string[];
+  coverImageUrl?: string;
+  level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  duration?: string;
+  instructor: {
+    id: string;
+    fullName: string;
   };
+  modules: Module[];
+  createdAt: Date;
 }
 
 export interface CreateCourseRequest {
   title: string;
   description: string;
-  thumbnailUrl?: string;
-}
-
-export interface UpdateCourseRequest {
-  title?: string;
-  description?: string;
-  thumbnailUrl?: string;
-  isPublished?: boolean;
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  duration_hours: number;
+  price: number;
+  thumbnail_url?: string;
 }
 
 // Module types
 export interface Module {
   id: string;
   title: string;
-  description: string;
-  orderIndex: number;
-  courseId: string;
-  course?: Course;
-  createdAt: string;
-  updatedAt: string;
-  lessons?: Lesson[];
-  _count?: {
-    lessons: number;
-  };
+  description?: string;
+  order: number;
+  lessons: Lesson[];
 }
 
 export interface CreateModuleRequest {
   title: string;
-  description: string;
-  orderIndex: number;
-  courseId: string;
-}
-
-export interface UpdateModuleRequest {
-  title?: string;
   description?: string;
-  orderIndex?: number;
+  courseId: string;
+  order: number;
 }
 
 // Lesson types
@@ -87,28 +93,20 @@ export interface Lesson {
   id: string;
   title: string;
   content: string;
-  orderIndex: number;
-  moduleId: string;
-  module?: Module;
-  createdAt: string;
-  updatedAt: string;
+  module_id: string;
+  instructor_id: string;
+  order_index: number;
+  created_at: Date;
+  updated_at: Date;
   resources?: Resource[];
-  _count?: {
-    resources: number;
-  };
 }
 
 export interface CreateLessonRequest {
   title: string;
   content: string;
-  orderIndex: number;
-  moduleId: string;
-}
-
-export interface UpdateLessonRequest {
-  title?: string;
-  content?: string;
-  orderIndex?: number;
+  module_id: string;
+  instructor_id: string;
+  order_index: number;
 }
 
 // Resource types
@@ -118,10 +116,9 @@ export interface Resource {
   title: string;
   url: string;
   description?: string;
-  lessonId: string;
-  lesson?: Lesson;
-  createdAt: string;
-  updatedAt: string;
+  lesson_id: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface CreateResourceRequest {
@@ -132,80 +129,80 @@ export interface CreateResourceRequest {
   lesson_id: string;
 }
 
-export interface UpdateResourceRequest {
-  type?: ResourceType;
+// Instructor types
+export interface Instructor {
+  id: string;
+  fullName: string;
   title?: string;
-  url?: string;
-  description?: string;
+  bio?: string;
 }
 
 // Enrollment types
 export interface Enrollment {
   id: string;
-  userId: string;
-  courseId: string;
-  user?: User;
-  course?: Course;
-  enrolledAt: string;
-  progress?: LessonProgress[];
-}
-
-export interface CreateEnrollmentRequest {
-  courseId: string;
-}
-
-// Progress types
-export interface LessonProgress {
-  id: string;
-  userId: string;
-  lessonId: string;
-  status: LessonStatus;
-  completedAt?: string;
-  user?: User;
-  lesson?: Lesson;
-}
-
-// API Response types
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-}
-
-export interface PaginatedResponse<T> {
-  success: boolean;
-  message: string;
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
+  enrollmentDate: Date;
+  course: {
+    id: string;
+    courseCode: string;
+    title: string;
+    description?: string;
   };
 }
 
-// Theme types
-export interface ThemeContextType {
-  isDarkMode: boolean;
-  toggleTheme: () => void;
+// Progress types
+export interface Progress {
+  id: string;
+  lessonId: string;
+  userId: string;
+  completed: boolean;
+  completedAt?: Date;
+  timeSpent: number;
 }
 
-// Auth types
-export interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  login: () => void;
-  logout: () => Promise<void>;
-  checkAuthStatus: () => Promise<User | null>;
+// Dashboard types
+export interface DashboardStats {
+  totalCourses: number;
+  totalLessons: number;
+  totalStudents: number;
+  totalInstructors: number;
 }
 
-// Query params
-export interface QueryParams {
+// Search types
+export interface SearchFilters {
+  query?: string;
+  level?: string;
+  tags?: string[];
+  instructorId?: string;
   page?: number;
   limit?: number;
-  search?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+}
+
+// Notification types
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
+  read: boolean;
+  createdAt: Date;
+}
+
+// Error types
+export interface ApiError {
+  message: string;
+  code?: string;
+  details?: any;
+}
+
+// Form types
+export interface FormErrors {
+  [key: string]: string;
+}
+
+export interface FormState<T> {
+  data: T;
+  errors: FormErrors;
+  loading: boolean;
+  submitted: boolean;
 }

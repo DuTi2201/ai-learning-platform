@@ -1,31 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
   Container,
   Typography,
+  Box,
   Grid,
   Card,
   CardContent,
   Button,
   Tabs,
   Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider
+  Chip,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import {
   Add as AddIcon,
   School as SchoolIcon,
-  MenuBook as MenuBookIcon,
-  Assignment as AssignmentIcon,
+  MenuBook as BookIcon,
   People as PeopleIcon,
-  Dashboard as DashboardIcon
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Visibility as ViewIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import CreateLessonForm from '../components/admin/CreateLessonForm';
+import CreateCourseForm from '../components/admin/CreateCourseForm';
 import ResourceForm from '../components/admin/ResourceForm';
 import { courseService } from '../services/courseService';
 import { lessonService } from '../services/lessonService';
@@ -72,12 +88,14 @@ const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState({
     totalCourses: 0,
     totalLessons: 0,
-    totalStudents: 0,
-    totalResources: 0
+    totalStudents: 0
   });
   const [lessonFormOpen, setLessonFormOpen] = useState(false);
+  const [courseFormOpen, setCourseFormOpen] = useState(false);
   const [resourceFormOpen, setResourceFormOpen] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -85,23 +103,28 @@ const AdminDashboard: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
+      setLoading(true);
+      setError(null);
+      
       // Load courses
-      const coursesResponse = await courseService.getAllCourses();
-      setCourses(coursesResponse.data);
+      const coursesData = await courseService.getAllCourses();
+      setCourses(coursesData);
       
-      // Load recent lessons (mock for now)
-      // const lessonsResponse = await lessonService.getRecentLessons();
-      // setRecentLessons(lessonsResponse.data);
+      // Load recent lessons
+      const lessonsData = await lessonService.getRecentLessons();
+      setRecentLessons(lessonsData);
       
-      // Update stats
+      // Calculate stats
       setStats({
-        totalCourses: coursesResponse.data.length,
-        totalLessons: 0, // Will be updated when lesson API is available
-        totalStudents: 0, // Will be updated when user stats API is available
-        totalResources: 0 // Will be updated when resource stats API is available
+        totalCourses: coursesData.length,
+        totalLessons: lessonsData.length,
+        totalStudents: 0 // This would come from a separate API
       });
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
+    } catch (err: any) {
+      console.error('Error loading dashboard data:', err);
+      setError('Không thể tải dữ liệu dashboard');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,6 +134,11 @@ const AdminDashboard: React.FC = () => {
 
   const handleLessonCreated = () => {
     setLessonFormOpen(false);
+    loadDashboardData();
+  };
+
+  const handleCourseCreated = (course: Course) => {
+    setCourseFormOpen(false);
     loadDashboardData();
   };
 
@@ -124,44 +152,45 @@ const AdminDashboard: React.FC = () => {
     setResourceFormOpen(true);
   };
 
-  if (user?.role !== 'ADMIN') {
+  if (loading) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" color="error">
-          Truy cập bị từ chối
-        </Typography>
-        <Typography variant="body1">
-          Bạn không có quyền truy cập vào trang quản trị.
-        </Typography>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="error">{error}</Alert>
       </Container>
     );
   }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Bảng điều khiển quản trị
+      <Typography variant="h4" component="h1" gutterBottom>
+        Bảng điều khiển Admin
       </Typography>
       
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="admin dashboard tabs">
-          <Tab label="Tổng quan" {...a11yProps(0)} />
-          <Tab label="Quản lý nội dung" {...a11yProps(1)} />
-        </Tabs>
-      </Box>
+      <Typography variant="body1" color="text.secondary" gutterBottom>
+        Chào mừng, {user?.fullName}!
+      </Typography>
 
-      <TabPanel value={tabValue} index={0}>
-        {/* Overview Tab */}
-        <Grid container spacing={3}>
-          {/* Stats Cards */}
-          <Grid item xs={12} sm={6} md={3}>
+      <Box sx={{ mt: 4 }}>
+        {/* Stats Cards */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <SchoolIcon color="primary" sx={{ mr: 2 }} />
+                  <SchoolIcon sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
                   <Box>
                     <Typography color="textSecondary" gutterBottom>
-                      Tổng khóa học
+                      Tổng số khóa học
                     </Typography>
                     <Typography variant="h4">
                       {stats.totalCourses}
@@ -172,14 +201,14 @@ const AdminDashboard: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <MenuBookIcon color="secondary" sx={{ mr: 2 }} />
+                  <BookIcon sx={{ fontSize: 40, color: 'secondary.main', mr: 2 }} />
                   <Box>
                     <Typography color="textSecondary" gutterBottom>
-                      Tổng bài học
+                      Tổng số bài học
                     </Typography>
                     <Typography variant="h4">
                       {stats.totalLessons}
@@ -190,14 +219,14 @@ const AdminDashboard: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <PeopleIcon color="success" sx={{ mr: 2 }} />
+                  <PeopleIcon sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
                   <Box>
                     <Typography color="textSecondary" gutterBottom>
-                      Tổng học viên
+                      Tổng số học viên
                     </Typography>
                     <Typography variant="h4">
                       {stats.totalStudents}
@@ -207,205 +236,176 @@ const AdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <AssignmentIcon color="warning" sx={{ mr: 2 }} />
-                  <Box>
-                    <Typography color="textSecondary" gutterBottom>
-                      Tổng tài nguyên
+        </Grid>
+
+        {/* Action Buttons */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setCourseFormOpen(true)}
+          >
+            Tạo khóa học mới
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setLessonFormOpen(true)}
+          >
+            Tạo bài học mới
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<AddIcon />}
+            onClick={() => setResourceFormOpen(true)}
+          >
+            Thêm tài nguyên
+          </Button>
+        </Box>
+
+        {/* Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={tabValue} onChange={handleTabChange} aria-label="admin dashboard tabs">
+            <Tab label="Khóa học" {...a11yProps(0)} />
+            <Tab label="Bài học gần đây" {...a11yProps(1)} />
+            <Tab label="Thống kê" {...a11yProps(2)} />
+          </Tabs>
+        </Box>
+
+        {/* Courses Tab */}
+        <TabPanel value={tabValue} index={0}>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Tiêu đề</TableCell>
+                  <TableCell>Mã khóa học</TableCell>
+                  <TableCell>Giảng viên</TableCell>
+                  <TableCell>Số module</TableCell>
+                  <TableCell>Ngày tạo</TableCell>
+                  <TableCell>Thao tác</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {courses.map((course) => (
+                  <TableRow key={course.id}>
+                    <TableCell>{course.title}</TableCell>
+                    <TableCell>{course.courseCode}</TableCell>
+                    <TableCell>{course.instructor.fullName}</TableCell>
+                    <TableCell>{course.modules.length}</TableCell>
+                    <TableCell>
+                      {new Date(course.createdAt).toLocaleDateString('vi-VN')}
+                    </TableCell>
+                    <TableCell>
+                      <IconButton size="small" color="primary">
+                        <ViewIcon />
+                      </IconButton>
+                      <IconButton size="small" color="secondary">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton size="small" color="error">
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </TabPanel>
+
+        {/* Recent Lessons Tab */}
+        <TabPanel value={tabValue} index={1}>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Tiêu đề</TableCell>
+                  <TableCell>Giảng viên</TableCell>
+                  <TableCell>Ngày tạo</TableCell>
+                  <TableCell>Thao tác</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {recentLessons.map((lesson) => (
+                  <TableRow key={lesson.id}>
+                    <TableCell>{lesson.title}</TableCell>
+                    <TableCell>{lesson.instructor_id}</TableCell>
+                    <TableCell>
+                      {new Date(lesson.created_at).toLocaleDateString('vi-VN')}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleAddResource(lesson.id)}
+                      >
+                        Thêm tài nguyên
+                      </Button>
+                      <IconButton size="small" color="primary">
+                        <ViewIcon />
+                      </IconButton>
+                      <IconButton size="small" color="secondary">
+                        <EditIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </TabPanel>
+
+        {/* Stats Tab */}
+        <TabPanel value={tabValue} index={2}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Thống kê tổng quan
+                  </Typography>
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Tổng số khóa học: {stats.totalCourses}
                     </Typography>
-                    <Typography variant="h4">
-                      {stats.totalResources}
+                    <Typography variant="body2" color="text.secondary">
+                      Tổng số bài học: {stats.totalLessons}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Tổng số học viên: {stats.totalStudents}
                     </Typography>
                   </Box>
-                </Box>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
+        </TabPanel>
+      </Box>
 
-          {/* Recent Activity */}
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Khóa học gần đây
-              </Typography>
-              <List>
-                {courses.slice(0, 5).map((course) => (
-                  <React.Fragment key={course.id}>
-                    <ListItem>
-                      <ListItemIcon>
-                        <SchoolIcon />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={course.title}
-                        secondary={course.description}
-                      />
-                    </ListItem>
-                    <Divider />
-                  </React.Fragment>
-                ))}
-              </List>
-            </Paper>
-          </Grid>
+      {/* Create Course Modal */}
+      <CreateCourseForm
+        open={courseFormOpen}
+        onClose={() => setCourseFormOpen(false)}
+        onCourseCreated={handleCourseCreated}
+      />
 
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Bài học gần đây
-              </Typography>
-              <List>
-                {recentLessons.slice(0, 5).map((lesson) => (
-                  <React.Fragment key={lesson.id}>
-                    <ListItem>
-                      <ListItemIcon>
-                        <MenuBookIcon />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={lesson.title}
-                        secondary={`Thứ tự: ${lesson.order_index}`}
-                      />
-                    </ListItem>
-                    <Divider />
-                  </React.Fragment>
-                ))}
-              </List>
-            </Paper>
-          </Grid>
-        </Grid>
-      </TabPanel>
-
-      <TabPanel value={tabValue} index={1}>
-        {/* Content Management Tab */}
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setLessonFormOpen(true)}
-                sx={{ mr: 2 }}
-              >
-                Tạo bài học mới
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => setResourceFormOpen(true)}
-              >
-                Thêm tài nguyên
-              </Button>
-            </Box>
-          </Grid>
-
-          {/* Course Management */}
-          <Grid item xs={12}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Quản lý khóa học
-              </Typography>
-              <Grid container spacing={2}>
-                {courses.map((course) => (
-                  <Grid item xs={12} md={6} lg={4} key={course.id}>
-                    <Card>
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                          {course.title}
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary" gutterBottom>
-                          {course.description}
-                        </Typography>
-                        <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-                          <Button size="small" variant="outlined">
-                            Chỉnh sửa
-                          </Button>
-                          <Button 
-                            size="small" 
-                            variant="text"
-                            onClick={() => handleAddResource(course.id)}
-                          >
-                            Thêm tài nguyên
-                          </Button>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            </Paper>
-          </Grid>
-
-          {/* Recent Lessons Management */}
-          <Grid item xs={12}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Bài học gần đây
-              </Typography>
-              <List>
-                {recentLessons.map((lesson) => (
-                  <React.Fragment key={lesson.id}>
-                    <ListItem
-                      secondaryAction={
-                        <Box>
-                          <Button size="small" sx={{ mr: 1 }}>
-                            Chỉnh sửa
-                          </Button>
-                          <Button 
-                            size="small" 
-                            onClick={() => handleAddResource(lesson.id)}
-                          >
-                            Thêm tài nguyên
-                          </Button>
-                        </Box>
-                      }
-                    >
-                      <ListItemIcon>
-                        <MenuBookIcon />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={lesson.title}
-                        secondary={`Thứ tự: ${lesson.order_index}`}
-                      />
-                    </ListItem>
-                    <Divider />
-                  </React.Fragment>
-                ))}
-              </List>
-            </Paper>
-          </Grid>
-        </Grid>
-      </TabPanel>
-
-      {/* Forms */}
-      {lessonFormOpen && (
-        <CreateLessonForm
-          open={lessonFormOpen}
-          onClose={() => setLessonFormOpen(false)}
-          onLessonCreated={handleLessonCreated}
-        />
-      )}
-      {resourceFormOpen && (
-        <ResourceForm
-          open={resourceFormOpen}
-          onClose={() => setResourceFormOpen(false)}
-          onResourceCreated={handleResourceCreated}
-          lessonId={selectedLessonId}
-        />
-      )}
-      {/* Create Lesson Form */}
+      {/* Create Lesson Modal */}
       <CreateLessonForm
         open={lessonFormOpen}
         onClose={() => setLessonFormOpen(false)}
         onLessonCreated={handleLessonCreated}
       />
 
-      {/* Resource Form */}
+      {/* Resource Form Modal */}
       <ResourceForm
         open={resourceFormOpen}
-        onClose={() => setResourceFormOpen(false)}
+        onClose={() => {
+          setResourceFormOpen(false);
+          setSelectedLessonId(null);
+        }}
         onResourceCreated={handleResourceCreated}
+        lessonId={selectedLessonId}
       />
     </Container>
   );
