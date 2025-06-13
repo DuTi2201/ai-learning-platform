@@ -157,7 +157,7 @@ export const generateToken = (userId: string): string => {
   
   return jwt.sign(
     { userId },
-    secret,
+    secret as string,
     {
       expiresIn: process.env.JWT_EXPIRES_IN || '7d',
     }
