@@ -9,15 +9,25 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true, // Enable cookies
+  timeout: 10000, // 10 second timeout
 });
 
-// Handle token expiration
+// Handle token expiration and other errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Clear any auth state and redirect
-      window.location.href = '/';
+    // Handle different types of errors
+    if (error.code === 'ECONNABORTED') {
+      // Request timeout
+      console.warn('Request timeout - please check your connection');
+    } else if (error.code === 'ERR_NETWORK') {
+      // Network error
+      console.warn('Network error - please check if the server is running');
+    } else if (error.response?.status === 401) {
+      // Only redirect on 401 if we're not on the login page
+      if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/auth/callback')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

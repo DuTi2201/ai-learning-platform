@@ -29,8 +29,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const userData = await authService.getCurrentUser();
       setUser(userData);
-    } catch (error) {
-      console.error('Auth check failed:', error);
+    } catch (error: any) {
+      // Only log error if it's not a 401 (unauthorized) - which is expected when user is not logged in
+      if (error?.response?.status !== 401) {
+        console.error('Auth check failed:', error);
+      }
       setUser(null);
     } finally {
       setIsLoading(false);
