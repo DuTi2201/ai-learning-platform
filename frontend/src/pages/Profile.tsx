@@ -37,9 +37,7 @@ export const Profile: React.FC = () => {
     return (
       <Layout>
         <Container maxWidth="md" sx={{ py: 4 }}>
-          <Typography variant="h4" align="center">
-            Vui lòng đăng nhập để xem thông tin cá nhân
-          </Typography>
+          {/* Header đã được xóa theo yêu cầu */}
         </Container>
       </Layout>
     );
@@ -69,7 +67,7 @@ export const Profile: React.FC = () => {
           <Divider sx={{ my: 3 }} />
 
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid size = {{xs:12, md:6}} >  
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                 Thông tin cá nhân
               </Typography>
@@ -101,7 +99,7 @@ export const Profile: React.FC = () => {
               </Box>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size = {{xs:12, md:6}} >
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                 Thống kê học tập
               </Typography>
