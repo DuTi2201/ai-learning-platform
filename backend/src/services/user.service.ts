@@ -1,103 +1,19 @@
-import { prisma } from '../config/database';
-import { AppError } from '../types';
-import {
-  UpdateUserRequest,
-  PaginationParams,
-  PaginatedResponse,
-  UserRole,
-} from '../types';
+import { PrismaClient, UserRole } from '@prisma/client';
+import { CreateUserData, UpdateUserData } from '../types/user.types';
+
+const prisma = new PrismaClient();
 
 export class UserService {
-  // Get all users with pagination and search (Admin only)
-  static async getAllUsers(
-    params: PaginationParams & { search?: string; role?: UserRole }
-  ): Promise<PaginatedResponse<any>> {
-    const { page = 1, limit = 10, search, role } = params;
-    const skip = (page - 1) * limit;
-
-    const where: any = {};
-
-    if (search) {
-      where.OR = [
-        { fullName: { contains: search, mode: 'insensitive' as const } },
-        { email: { contains: search, mode: 'insensitive' as const } },
-      ];
-    }
-
-    if (role) {
-      where.role = role;
-    }
-
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          email: true,
-          fullName: true,
-          role: true,
-          profilePictureUrl: true,
-          createdAt: true,
-          updatedAt: true,
-          _count: {
-            select: {
-              enrollments: true,
-              lessonProgress: true,
-            },
-          },
-        },
-      }),
-      prisma.user.count({ where }),
-    ]);
-
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: users,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1,
-      },
-    };
-  }
-
-  // Get user by ID
-  static async getUserById(userId: string, includePrivate: boolean = false) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
+  // Get all users (admin only)
+  static async getAllUsers() {
+    return await prisma.user.findMany({
       select: {
         id: true,
-        email: includePrivate,
+        email: true,
         fullName: true,
-        role: includePrivate,
+        role: true,
         profilePictureUrl: true,
         createdAt: true,
-        updatedAt: includePrivate,
-        enrollments: {
-          select: {
-            id: true,
-            enrolledAt: true,
-            course: {
-              select: {
-                id: true,
-                courseCode: true,
-                title: true,
-                description: true,
-                thumbnail: true,
-                level: true,
-                status: true,
-              },
-            },
-          },
-          orderBy: { enrollmentDate: 'desc' },
-        },
         _count: {
           select: {
             enrollments: true,
@@ -105,10 +21,78 @@ export class UserService {
           },
         },
       },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
+  }
+
+  // Get users with pagination
+  static async getUsersWithPagination(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          profilePictureUrl: true,
+          createdAt: true,
+          _count: {
+            select: {
+              enrollments: true,
+              lessonProgress: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      prisma.user.count(),
+    ]);
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // Get user by ID
+  static async getUserById(userId: string, includePrivate: boolean = false) {
+    let user;
+    
+    if (includePrivate) {
+      // @ts-ignore
+      user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          enrollments: {
+            include: {
+              course: true,
+            },
+            orderBy: { enrolledAt: 'desc' },
+          },
+        },
+      });
+    } else {
+      // @ts-ignore
+      user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+    }
 
     if (!user) {
-      throw new AppError('User not found', 404);
+      throw new Error('User not found');
     }
 
     return user;
@@ -125,9 +109,12 @@ export class UserService {
         role: true,
         profilePictureUrl: true,
         createdAt: true,
-        updatedAt: true,
       },
     });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
 
     return user;
   }
@@ -137,21 +124,43 @@ export class UserService {
     email: string;
     fullName: string;
     profilePictureUrl?: string;
+    googleId: string;
   }) {
-    const { email, fullName, profilePictureUrl } = userData;
+    const { email, fullName, profilePictureUrl, googleId } = userData;
 
+    // @ts-ignore
     const user = await prisma.user.upsert({
       where: { email },
       update: {
           fullName,
         profilePictureUrl,
-        updatedAt: new Date(),
       },
       create: {
           email,
           fullName,
         profilePictureUrl,
-        role: UserRole.STUDENT, // Default role
+        googleId,
+        role: UserRole.USER, // Default role
+      },
+    });
+
+    return user;
+  }
+
+  // Create user
+  static async createUser(userData: CreateUserData) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: userData.email },
+    });
+
+    if (existingUser) {
+      throw new Error('User with this email already exists');
+    }
+
+    return await prisma.user.create({
+      data: {
+        ...userData,
+        role: userData.role || UserRole.USER,
       },
       select: {
         id: true,
@@ -160,288 +169,170 @@ export class UserService {
         role: true,
         profilePictureUrl: true,
         createdAt: true,
-        updatedAt: true,
       },
     });
-
-    return user;
   }
 
-  // Update user profile
-  static async updateUser(userId: string, data: UpdateUserRequest) {
-    // Check if user exists
+  // Update user
+  static async updateUser(userId: string, data: UpdateUserData) {
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
     });
 
     if (!existingUser) {
-      throw new AppError('User not found', 404);
+      throw new Error('User not found');
     }
 
-    // Check if email is being updated and already exists
-    if (data.email && data.email !== existingUser.email) {
-      const emailExists = await prisma.user.findUnique({
-        where: { email: data.email },
-      });
-
-      if (emailExists) {
-        throw new AppError('User with this email already exists', 400);
-      }
-    }
-
+    // @ts-ignore
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
         ...data,
-        updatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        role: true,
-        profilePictureUrl: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
 
     return user;
   }
 
-  // Update user role (Admin only)
+  // Update user role (admin only)
   static async updateUserRole(userId: string, role: UserRole) {
-    const user = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findUnique({
       where: { id: userId },
     });
 
-    if (!user) {
-      throw new AppError('User not found', 404);
+    if (!existingUser) {
+      throw new Error('User not found');
     }
 
+    // @ts-ignore
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         role,
-        updatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        role: true,
-        profilePictureUrl: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
 
     return updatedUser;
   }
 
-  // Delete user (Admin only)
+  // Delete user (admin only)
   static async deleteUser(userId: string) {
-    const user = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        _count: {
-          select: {
-            enrollments: true,
-            lessonProgress: true,
-          },
-        },
-      },
     });
 
-    if (!user) {
-      throw new AppError('User not found', 404);
+    if (!existingUser) {
+      throw new Error('User not found');
     }
 
-    // Delete user and all related data in a transaction
-    await prisma.$transaction(async (tx) => {
-      // Delete user progress
-      await tx.lessonProgress.deleteMany({
-        where: { userId },
-      });
-
-      // Delete user enrollments
-      await tx.enrollment.deleteMany({
-        where: { userId },
-      });
-
-      // Delete user
-      await tx.user.delete({
-        where: { id: userId },
-      });
+    await prisma.user.delete({
+      where: { id: userId },
     });
 
     return { message: 'User deleted successfully' };
   }
 
-  // Get user's learning progress
-  static async getUserProgress(userId: string) {
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new AppError('User not found', 404);
-    }
-
-    const progress = await prisma.lessonProgress.findMany({
-      where: { userId },
-      include: {
-        lesson: {
-          select: {
-            id: true,
-            title: true,
-            lessonOrder: true,
-            module: {
-              select: {
-                id: true,
-                title: true,
-                moduleOrder: true,
-                course: {
-                  select: {
-                    id: true,
-                    courseCode: true,
-                    title: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        lesson: {
-          module: {
-            course: {
-              title: 'asc',
-            },
-          },
-        },
-      },
-    });
-
-    return progress;
-  }
-
-  // Get user's enrolled courses with progress
-  static async getUserEnrolledCourses(userId: string) {
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new AppError('User not found', 404);
-    }
-
-    const enrollments = await prisma.enrollment.findMany({
-      where: { userId },
-      include: {
-        course: {
-          select: {
-            id: true,
-            courseCode: true,
-            title: true,
-            description: true,
-            modules: {
-              select: {
-                id: true,
-                lessons: {
-                  select: {
-                    id: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      orderBy: { enrollmentDate: 'desc' },
-    });
-
-    // Calculate progress for each course
-    const coursesWithProgress = await Promise.all(
-      enrollments.map(async (enrollment) => {
-        const totalLessons = enrollment.course.modules.reduce(
-          (total, module) => total + module.lessons.length,
-          0
-        );
-
-        const completedLessons = await prisma.lessonProgress.count({
-          where: {
-            userId,
-            lesson: {
-              module: {
-                courseId: enrollment.course.id,
-              },
-            },
-            status: 'COMPLETED',
-          },
-        });
-
-        const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
-
-        return {
-          ...enrollment,
-          course: {
-            ...enrollment.course,
-            modules: undefined, // Remove modules from response
-          },
-          progress: {
-            totalLessons,
-            completedLessons,
-            progressPercentage: Math.round(progressPercentage * 100) / 100,
-          },
-        };
-      })
-    );
-
-    return coursesWithProgress;
-  }
-
   // Get user statistics
   static async getUserStats(userId: string) {
-    // Check if user exists
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      include: {
+        enrollments: {
+          include: {
+            course: {
+              include: {
+                modules: {
+                  include: {
+                    lessons: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        lessonProgress: {
+          where: {
+            completed: true,
+          },
+        },
+      },
     });
 
     if (!user) {
-      throw new AppError('User not found', 404);
+      throw new Error('User not found');
     }
 
-    const [enrollmentsCount, completedLessonsCount, totalProgressCount] = await Promise.all([
-      prisma.enrollment.count({
-        where: { userId },
-      }),
-      prisma.lessonProgress.count({
-        where: {
-          userId,
-          status: 'COMPLETED',
+    // Calculate statistics
+    const totalEnrollments = user.enrollments.length;
+    const totalLessonsCompleted = user.lessonProgress.length;
+    
+    let totalLessonsAvailable = 0;
+    user.enrollments.forEach(enrollment => {
+      enrollment.course.modules.forEach(module => {
+        totalLessonsAvailable += module.lessons.length;
+      });
+    });
+
+    const completionRate = totalLessonsAvailable > 0 
+      ? (totalLessonsCompleted / totalLessonsAvailable) * 100 
+      : 0;
+
+    return {
+      totalEnrollments,
+      totalLessonsCompleted,
+      totalLessonsAvailable,
+      completionRate: Math.round(completionRate * 100) / 100, // Round to 2 decimal places
+    };
+  }
+
+  // Search users
+  static async searchUsers(query: string, page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    
+    const whereClause = {
+      OR: [
+        {
+          fullName: {
+            contains: query,
+            mode: 'insensitive' as const,
+          },
+        },
+        {
+          email: {
+            contains: query,
+            mode: 'insensitive' as const,
+          },
+        },
+      ],
+    };
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          profilePictureUrl: true,
+          createdAt: true,
+        },
+        orderBy: {
+          fullName: 'asc',
         },
       }),
-      prisma.lessonProgress.count({
-        where: { userId },
-      }),
+      prisma.user.count({ where: whereClause }),
     ]);
 
     return {
-      user: {
-        id: user.id,
-        name: user.fullName,
-        email: user.email,
-        profilePictureUrl: user.profilePictureUrl,
-      },
-      stats: {
-        totalEnrollments: enrollmentsCount,
-        completedLessons: completedLessonsCount,
-        totalLessonsStarted: totalProgressCount,
-        completionRate: totalProgressCount > 0 ? (completedLessonsCount / totalProgressCount) * 100 : 0,
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
       },
     };
   }

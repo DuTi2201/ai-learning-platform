@@ -1,152 +1,164 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../config/database';
-import { AppError } from '../types';
-import { asyncHandler } from './errorHandler';
+import { PrismaClient, UserRole } from '@prisma/client';
 
-// Extend Request interface to include user
+const prisma = new PrismaClient();
+
+// Extend Express Request interface to include user
 declare global {
   namespace Express {
     interface Request {
       user?: {
         id: string;
-        googleId: string;
         email: string;
         fullName: string;
-        profilePictureUrl: string | null;
-        role: 'ADMIN' | 'USER';
-        createdAt: Date;
+        role: UserRole;
+        profilePictureUrl?: string;
       };
     }
   }
 }
 
+// Interface for JWT payload
+interface JWTPayload {
+  userId: string;
+  iat?: number;
+  exp?: number;
+}
+
 // Check if user is authenticated
-export const checkAuth = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
-    let token: string | undefined;
-
-    // Check for token in Authorization header
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
-    // Check for token in cookies
-    else if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
-    }
-    // Check if user is authenticated via session (Passport)
-    else if (req.isAuthenticated && req.isAuthenticated() && req.user) {
-      req.user = req.user as Express.User;
-      return next();
-    }
+export const checkAuth = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '') || 
+                  req.cookies?.token;
 
     if (!token) {
-      throw new AppError('Access denied. No token provided.', 401);
-    }
-
-    try {
-      // Verify JWT token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-        userId: string;
-        iat: number;
-        exp: number;
-      };
-
-      // Get user from database
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: {
-          id: true,
-          googleId: true,
-          email: true,
-          fullName: true,
-          profilePictureUrl: true,
-          role: true,
-          createdAt: true,
-        },
+      return res.status(401).json({
+        success: false,
+        message: 'Access denied. No token provided.',
       });
-
-      if (!user) {
-        throw new AppError('User not found', 401);
-      }
-
-      req.user = user;
-      next();
-    } catch (error) {
-      if (error instanceof jwt.JsonWebTokenError) {
-        throw new AppError('Invalid token', 401);
-      }
-      if (error instanceof jwt.TokenExpiredError) {
-        throw new AppError('Token expired', 401);
-      }
-      throw error;
     }
-  }
-);
 
-// Check if user has admin role
-export const checkAdmin = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return res.status(500).json({
+        success: false,
+        message: 'Server configuration error',
+      });
+    }
+
+    const decoded = jwt.verify(token, secret) as JWTPayload;
+    
+    // Get user from database
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        profilePictureUrl: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token. User not found.',
+      });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token.',
+      });
+    }
+    
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired.',
+      });
+    }
+
+    console.error('Auth middleware error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during authentication',
+    });
+  }
+};
+
+// Check if user is admin
+export const checkAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
     if (!req.user) {
-      throw new AppError('Access denied. User not authenticated.', 401);
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
     }
 
-    if (req.user.role !== 'ADMIN') {
-      throw new AppError('Access denied. Admin privileges required.', 403);
+    if (req.user.role !== UserRole.ADMIN) {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required',
+      });
     }
 
     next();
+  } catch (error) {
+    console.error('Admin check error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during authorization',
+    });
   }
-);
+};
 
-// Optional authentication - doesn't throw error if no token
-export const optionalAuth = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
-    let token: string | undefined;
-
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    } else if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
-    } else if (req.isAuthenticated && req.isAuthenticated() && req.user) {
-      req.user = req.user as Express.User;
-      return next();
-    }
+// Optional auth - doesn't fail if no token
+export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '') || 
+                  req.cookies?.token;
 
     if (!token) {
       return next();
     }
 
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-        userId: string;
-        iat: number;
-        exp: number;
-      };
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return next();
+    }
 
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: {
-          id: true,
-          googleId: true,
-          email: true,
-          fullName: true,
-          profilePictureUrl: true,
-          role: true,
-          createdAt: true,
-        },
-      });
+    const decoded = jwt.verify(token, secret) as JWTPayload;
+    
+    // Get user from database
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        profilePictureUrl: true,
+      },
+    });
 
-      if (user) {
-        req.user = user;
-      }
-    } catch (error) {
-      // Silently ignore token errors for optional auth
+    if (user) {
+      req.user = user;
     }
 
     next();
+  } catch (error) {
+    // Silently continue without user if token is invalid
+    next();
   }
-);
+};
 
 // Generate JWT token
 export const generateToken = (userId: string): string => {
@@ -155,11 +167,5 @@ export const generateToken = (userId: string): string => {
     throw new Error('JWT_SECRET is not defined');
   }
   
-  return jwt.sign(
-    { userId },
-    secret as string,
-    {
-      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-    }
-  );
+  return jwt.sign({ userId }, secret, { expiresIn: '7d' }) as string;
 };
