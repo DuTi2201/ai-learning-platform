@@ -1,63 +1,57 @@
 import { Request } from 'express';
-import { UserRole, ResourceType, LessonStatus } from '../generated/prisma';
 
-// Re-export enums
-export { UserRole, ResourceType, LessonStatus };
-
-// Extend Express Request type to include user
-declare global {
-  namespace Express {
-    interface User {
-      id: string;
-      googleId: string;
-      email: string;
-      fullName: string;
-      profilePictureUrl: string | null;
-      role: UserRole;
-      createdAt: Date;
-    }
-  }
+// Enums
+export enum UserRole {
+  STUDENT = 'STUDENT',
+  INSTRUCTOR = 'INSTRUCTOR',
+  ADMIN = 'ADMIN',
 }
 
-// API Response types
-export interface ApiResponse<T = any> {
+export enum ResourceType {
+  VIDEO = 'VIDEO',
+  PDF = 'PDF',
+  SLIDES = 'SLIDES',
+  ASSIGNMENT = 'ASSIGNMENT',
+  QUIZ = 'QUIZ',
+}
+
+export enum LessonStatus {
+  NOT_STARTED = 'NOT_STARTED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+}
+
+// Generic types
+export interface PaginatedResponse<T> {
   success: boolean;
   message: string;
-  data?: T;
-  error?: string;
-  pagination?: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean; // Added hasPrev
-  };
-}
-
-export interface PaginatedResponse<T> extends ApiResponse<T[]> {
+  data: T[];
   pagination: {
     page: number;
     limit: number;
     total: number;
     totalPages: number;
     hasNext: boolean;
-    hasPrev: boolean; // Added hasPrev
+    hasPrev: boolean;
   };
 }
 
-
-
 // Auth types
-export interface LoginResponse {
-  user: {
-    id: string;
-    email: string;
-    fullName: string;
-    profilePictureUrl: string | null;
-    role: UserRole;
-  };
-  token: string;
+export interface GoogleUser {
+  id: string;
+  email: string;
+  verified_email: boolean;
+  name: string;
+  given_name: string;
+  family_name: string;
+  picture: string;
+  locale: string;
+}
+
+export interface JwtPayload {
+  id: string;
+  email: string;
+  role: UserRole;
 }
 
 // Course types
@@ -65,134 +59,88 @@ export interface CreateCourseRequest {
   courseCode: string;
   title: string;
   description?: string;
+  instructorId: string;
+  tags?: string[];
+  coverImageUrl?: string;
 }
 
 export interface UpdateCourseRequest {
   courseCode?: string;
   title?: string;
   description?: string;
+  instructorId?: string;
+  tags?: string[];
+  coverImageUrl?: string;
 }
 
-export interface CourseWithDetails {
+export interface CourseResponse {
   id: string;
   courseCode: string;
   title: string;
   description: string | null;
-  createdAt: Date;
-  createdBy: {
+  tags: string[];
+  coverImageUrl: string | null;
+  instructor: {
     id: string;
     fullName: string;
   };
-  modules: ModuleWithLessons[];
-  _count: {
-    enrollments: number;
-  };
+  modules: ModuleResponse[];
 }
 
 // Module types
 export interface CreateModuleRequest {
-  courseId: string;
   title: string;
   description?: string;
-  moduleOrder: number;
+  courseId: string;
+  order: number;
 }
 
 export interface UpdateModuleRequest {
   title?: string;
   description?: string;
-  moduleOrder?: number;
+  order?: number;
 }
 
-export interface ModuleWithLessons {
+export interface ModuleResponse {
   id: string;
   title: string;
   description: string | null;
-  moduleOrder: number;
-  lessons: LessonWithResources[];
+  order: number;
+  lessons: LessonResponse[];
 }
 
 // Lesson types
 export interface CreateLessonRequest {
-  moduleId: string;
-  instructorId: string;
   title: string;
-  description?: string;
-  lessonDate?: string;
-  zoomInfo?: string;
-  lessonOrder: number;
+  content?: string;
+  moduleId: string;
+  order: number;
+  estimatedDuration?: number; // in minutes
 }
 
 export interface UpdateLessonRequest {
-  instructorId?: string;
   title?: string;
-  description?: string;
-  lessonDate?: string;
-  zoomInfo?: string;
-  lessonOrder?: number;
+  content?: string;
+  order?: number;
+  estimatedDuration?: number;
 }
 
-export interface LessonWithResources {
+export interface LessonResponse {
   id: string;
   title: string;
-  description: string | null;
-  lessonDate: Date | null;
-  zoomInfo: string | null;
-  lessonOrder: number;
-  instructor: {
-    id: string;
-    fullName: string;
-    title: string | null;
-  };
+  content: string | null;
+  order: number;
+  estimatedDuration: number | null;
   resources: ResourceResponse[];
-}
-
-export interface LessonWithDetails {
-  id: string;
-  title: string;
-  description: string | null;
-  lessonDate: Date | null;
-  zoomInfo: string | null;
-  lessonOrder: number;
-  instructor: {
-    id: string;
-    fullName: string;
-    title: string | null;
-  };
-  resources: ResourceResponse[];
-  module: {
-    id: string;
-    title: string;
-    course: {
-      id: string;
-      courseCode: string;
-      title: string;
-    };
-  };
-}
-
-export interface ModuleWithDetails {
-  id: string;
-  title: string;
-  description: string | null;
-  moduleOrder: number;
-  course: {
-    id: string;
-    courseCode: string;
-    title: string;
-  };
-  lessons: LessonWithResources[];
-  _count: {
-    lessons: number;
-  };
 }
 
 // Resource types
 export interface CreateResourceRequest {
-  lessonId: string;
   resourceType: ResourceType;
   title: string;
   url: string;
-  deadline?: string;
+  lessonId: string;
+  deadline?: string; // ISO 8601 date string
 }
 
 export interface UpdateResourceRequest {
@@ -215,14 +163,12 @@ export interface CreateInstructorRequest {
   fullName: string;
   title?: string;
   bio?: string;
-  email?: string;
 }
 
 export interface UpdateInstructorRequest {
   fullName?: string;
   title?: string;
   bio?: string;
-  email?: string;
 }
 
 export interface InstructorResponse {
