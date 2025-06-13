@@ -1,159 +1,171 @@
 # AI Learning Platform
 
-Một ứng dụng web học tập AI hiện đại được xây dựng với React.js và Node.js, cung cấp trải nghiệm học tập tương tác với xác thực Google OAuth2.
+Một nền tảng học tập AI hiện đại được xây dựng với React.js và Node.js, cung cấp trải nghiệm học tập tương tác với quản lý khóa học, bài học và theo dõi tiến độ.
 
-## Tech Stack
+## 🚀 Tính năng chính
+
+- **Xác thực Google OAuth2**: Đăng nhập an toàn với tài khoản Google
+- **Quản lý khóa học**: Tạo, chỉnh sửa và quản lý khóa học
+- **Hệ thống bài học**: Tổ chức nội dung theo modules và lessons
+- **Theo dõi tiến độ**: Theo dõi tiến độ học tập của người dùng
+- **Phân quyền người dùng**: Admin, Instructor và Student roles
+- **Giao diện responsive**: Thiết kế hiện đại với Material-UI
+- **API RESTful**: Backend mạnh mẽ với Express.js
+
+## 🛠️ Công nghệ sử dụng
 
 ### Frontend
-- **React.js** - Thư viện UI chính
-- **Material-UI** - Framework UI components
-- **React Router** - Điều hướng client-side
-- **Axios** - HTTP client cho API calls
-- **React Context** - Quản lý state toàn cục
+- React.js 18
+- Material-UI (MUI)
+- React Router DOM
+- Axios
+- TypeScript
 
 ### Backend
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **TypeScript** - Ngôn ngữ lập trình
-- **Prisma** - ORM và database toolkit
-- **PostgreSQL** - Cơ sở dữ liệu chính
-- **JWT** - Xác thực và phân quyền
-- **Google OAuth2** - Đăng nhập qua Google
-- **Express Session** - Quản lý session
-- **CORS** - Cross-origin resource sharing
+- Node.js
+- Express.js
+- Prisma ORM
+- PostgreSQL
+- JWT Authentication
+- Google OAuth2
+- TypeScript
 
-## Tính năng chính
+### DevOps
+- Docker & Docker Compose
+- Git
+- ESLint & Prettier
 
-- 🔐 **Xác thực Google OAuth2** - Đăng nhập an toàn qua tài khoản Google
-- 👥 **Phân quyền người dùng** - Student, Instructor, Admin roles
-- 📚 **Quản lý khóa học** - Tạo, chỉnh sửa và quản lý courses
-- 📖 **Hệ thống module và bài học** - Cấu trúc nội dung có tổ chức
-- 📁 **Quản lý tài nguyên** - Upload và quản lý files, videos, documents
-- 📊 **Theo dõi tiến độ** - Tracking học tập của students
-- 💬 **Hệ thống thảo luận** - Forums và comments
-- 📈 **Dashboard analytics** - Thống kê và báo cáo
+## 📋 Yêu cầu hệ thống
 
-## Cài đặt và Chạy dự án
-
-### Yêu cầu hệ thống
-- Node.js (v16 hoặc cao hơn)
-- PostgreSQL (v12 hoặc cao hơn)
+- Node.js 18+
+- PostgreSQL 14+
 - npm hoặc yarn
+- Git
+
+## 🚀 Hướng dẫn cài đặt
 
 ### 1. Clone repository
+
 ```bash
 git clone https://github.com/DuTi2201/ai-learning-platform.git
 cd ai-learning-platform
 ```
 
 ### 2. Cài đặt Backend
+
 ```bash
 cd backend
 npm install
 ```
 
-### 3. Cấu hình Environment Variables
-Tạo file `.env` trong thư mục `backend` với nội dung:
+### 3. Cấu hình môi trường Backend
+
+Tạo file `.env` từ `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Cập nhật các biến môi trường trong `.env`:
+
 ```env
-# Database
 DATABASE_URL="postgresql://username:password@localhost:5432/ai_learning_platform"
-
-# JWT
-JWT_SECRET="your-super-secret-jwt-key-here"
-JWT_EXPIRES_IN="7d"
-
-# Google OAuth2
+JWT_SECRET="your-jwt-secret-key"
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
-GOOGLE_CALLBACK_URL="http://localhost:3001/api/auth/google/callback"
-
-# Session
-SESSION_SECRET="your-session-secret-key"
-
-# Server
 PORT=3001
 NODE_ENV=development
-
-# Frontend URL
-FRONTEND_URL="http://localhost:3000"
 ```
 
 ### 4. Thiết lập Database
+
 ```bash
-# Chạy migrations để tạo tables
+# Chạy migration
 npx prisma migrate dev
 
-# Generate Prisma client
-npx prisma generate
-
-# (Tùy chọn) Seed dữ liệu mẫu
-npx prisma db seed
+# Seed dữ liệu mẫu (tùy chọn)
+node seed.js
 ```
 
 ### 5. Khởi động Backend
+
 ```bash
 npm run dev
 ```
+
 Backend sẽ chạy tại: http://localhost:3001
 
-### 6. Cài đặt và chạy Frontend
+### 6. Cài đặt Frontend
+
 Mở terminal mới:
+
 ```bash
 cd frontend
 npm install
+```
+
+### 7. Cấu hình môi trường Frontend
+
+Tạo file `.env` trong thư mục frontend:
+
+```env
+REACT_APP_API_URL=http://localhost:3001/api
+REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id
+```
+
+### 8. Khởi động Frontend
+
+```bash
 npm start
 ```
+
 Frontend sẽ chạy tại: http://localhost:3000
 
-## API Endpoints chính
+## 📚 API Endpoints chính
 
 ### Authentication
-- `GET /api/auth/google` - Khởi tạo Google OAuth
-- `GET /api/auth/google/callback` - Callback sau khi xác thực
-- `GET /api/auth/me` - Lấy thông tin user hiện tại
+- `POST /api/auth/google` - Xác thực Google OAuth2
+- `POST /api/auth/refresh` - Làm mới token
 - `POST /api/auth/logout` - Đăng xuất
 
 ### Users
-- `GET /api/users` - Lấy danh sách users (Admin only)
-- `GET /api/users/:id` - Lấy thông tin user theo ID
-- `PUT /api/users/:id` - Cập nhật thông tin user
-- `DELETE /api/users/:id` - Xóa user (Admin only)
+- `GET /api/users` - Lấy danh sách người dùng (Admin)
+- `GET /api/users/me` - Lấy thông tin người dùng hiện tại
+- `PUT /api/users/me` - Cập nhật thông tin cá nhân
+- `GET /api/users/instructors/list` - Lấy danh sách giảng viên (Admin)
 
 ### Courses
-- `GET /api/courses` - Lấy danh sách courses
-- `POST /api/courses` - Tạo course mới (Instructor/Admin)
-- `GET /api/courses/:id` - Lấy chi tiết course
-- `PUT /api/courses/:id` - Cập nhật course
-- `DELETE /api/courses/:id` - Xóa course
+- `GET /api/courses` - Lấy danh sách khóa học
+- `POST /api/courses` - Tạo khóa học mới (Admin/Instructor)
+- `GET /api/courses/:id` - Lấy chi tiết khóa học
+- `PUT /api/courses/:id` - Cập nhật khóa học
+- `DELETE /api/courses/:id` - Xóa khóa học
 
-### Modules
-- `GET /api/courses/:courseId/modules` - Lấy modules của course
-- `POST /api/courses/:courseId/modules` - Tạo module mới
-- `PUT /api/modules/:id` - Cập nhật module
-- `DELETE /api/modules/:id` - Xóa module
+### Modules & Lessons
+- `GET /api/modules/course/:courseId` - Lấy modules của khóa học
+- `POST /api/modules` - Tạo module mới
+- `GET /api/lessons/module/:moduleId` - Lấy lessons của module
+- `POST /api/lessons` - Tạo lesson mới
 
-### Lessons
-- `GET /api/modules/:moduleId/lessons` - Lấy lessons của module
-- `POST /api/modules/:moduleId/lessons` - Tạo lesson mới
-- `PUT /api/lessons/:id` - Cập nhật lesson
-- `DELETE /api/lessons/:id` - Xóa lesson
+## 🐳 Docker Deployment
 
-## Cấu trúc Database
+### Sử dụng Docker Compose
 
-Dự án sử dụng PostgreSQL với các bảng chính:
-- `users` - Thông tin người dùng
-- `courses` - Khóa học
-- `modules` - Module trong khóa học
-- `lessons` - Bài học trong module
-- `resources` - Tài nguyên học tập
-- `enrollments` - Đăng ký khóa học
-- `progress` - Tiến độ học tập
-- `discussions` - Thảo luận
-- `sessions` - Quản lý session
+```bash
+# Build và khởi động tất cả services
+docker-compose up --build
 
-## Development
+# Chạy ở background
+docker-compose up -d
+
+# Dừng services
+docker-compose down
+```
+
+## 🔧 Development
 
 ### Chạy tests
+
 ```bash
 # Backend tests
 cd backend
@@ -164,36 +176,63 @@ cd frontend
 npm test
 ```
 
-### Build production
-```bash
-# Build backend
-cd backend
-npm run build
+### Linting và Formatting
 
-# Build frontend
+```bash
+# Backend
+cd backend
+npm run lint
+npm run format
+
+# Frontend
 cd frontend
-npm run build
+npm run lint
+npm run format
 ```
 
-## Deployment
+## 📁 Cấu trúc dự án
 
-Dự án có thể được deploy lên các platform như:
-- **Frontend**: Vercel, Netlify
-- **Backend**: Heroku, Railway, Render
-- **Database**: PostgreSQL trên AWS RDS, Google Cloud SQL
+```
+ai-learning-platform/
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── middlewares/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   └── types/
+│   ├── prisma/
+│   └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── utils/
+│   └── package.json
+├── docker-compose.yml
+└── README.md
+```
 
-## Contributing
+## 🤝 Đóng góp
 
 1. Fork repository
 2. Tạo feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Tạo Pull Request
+5. Mở Pull Request
 
-## License
+## 📄 License
 
 Dự án này được phân phối dưới MIT License. Xem file `LICENSE` để biết thêm chi tiết.
 
-## Support
+## 👥 Tác giả
 
-Nếu bạn gặp vấn đề hoặc có câu hỏi, vui lòng tạo issue trên GitHub repository.
+- **DuTi2201** - *Initial work* - [DuTi2201](https://github.com/DuTi2201)
+
+## 🙏 Acknowledgments
+
+- Material-UI team cho component library tuyệt vời
+- Prisma team cho ORM mạnh mẽ
+- React và Node.js communities
