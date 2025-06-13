@@ -26,31 +26,31 @@ api.interceptors.request.use(
 
 export const lessonService = {
   async createLesson(lessonData: CreateLessonRequest): Promise<Lesson> {
-    const response = await api.post<ApiResponse<Lesson>>('/v1/lessons', lessonData);
+    const response = await api.post<ApiResponse<Lesson>>('/lessons', lessonData);
     return response.data.data;
   },
 
   async updateLesson(id: string, lessonData: Partial<CreateLessonRequest>): Promise<Lesson> {
-    const response = await api.put<ApiResponse<Lesson>>(`/v1/lessons/${id}`, lessonData);
+    const response = await api.put<ApiResponse<Lesson>>(`/lessons/${id}`, lessonData);
     return response.data.data;
   },
 
   async deleteLesson(id: string): Promise<void> {
-    await api.delete(`/v1/lessons/${id}`);
+    await api.delete(`/lessons/${id}`);
   },
 
   async getLessonById(id: string): Promise<Lesson> {
-    const response = await api.get<ApiResponse<Lesson>>(`/v1/lessons/${id}`);
+    const response = await api.get<ApiResponse<Lesson>>(`/lessons/${id}`);
     return response.data.data;
   },
 
   async getRecentLessons(): Promise<Lesson[]> {
-    const response = await api.get<ApiResponse<Lesson[]>>('/v1/lessons/recent');
+    const response = await api.get<ApiResponse<Lesson[]>>('/lessons/recent');
     return response.data.data;
   },
 
   async getAllLessons(): Promise<Lesson[]> {
-    const response = await api.get<ApiResponse<Lesson[]>>('/v1/lessons');
+    const response = await api.get<ApiResponse<Lesson[]>>('/lessons');
     return response.data.data;
   },
 };

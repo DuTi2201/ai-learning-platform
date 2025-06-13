@@ -98,13 +98,21 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
 
   const loadInstructors = async () => {
     try {
-      // Mock instructors for now - replace with actual API call
-      const mockInstructors = [
-        { id: '1', name: 'Giảng viên A', email: 'instructor.a@example.com' },
-        { id: '2', name: 'Giảng viên B', email: 'instructor.b@example.com' },
-        { id: '3', name: 'Giảng viên C', email: 'instructor.c@example.com' }
-      ];
-      setInstructors(mockInstructors);
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${API_BASE_URL}/api/users/instructors/list`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch instructors');
+      }
+      
+      const data = await response.json();
+      setInstructors(data.data || []);
     } catch (error) {
       console.error('Error loading instructors:', error);
       setError('Không thể tải danh sách giảng viên');
