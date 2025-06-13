@@ -251,14 +251,14 @@ export class UserController {
   });
 
   // Get all users (Admin only)
-  static getAllUsers = asyncHandler(async (req: Request, res: Response) => {
+  static getUsers = asyncHandler(async (req: Request, res: Response) => {
     const { page = 1, limit = 10, search, role } = req.query;
     
     const result = await UserService.getAllUsers({
       page: parseInt(page as string),
       limit: parseInt(limit as string),
       search: search as string,
-      role: role as string,
+      role: role as UserRole,
     });
 
     const response: ApiResponse = {

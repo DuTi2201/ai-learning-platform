@@ -8,6 +8,36 @@ import {
 } from '../types';
 
 export class ResourceService {
+  // Get all resources
+  static async getAllResources() {
+    const resources = await prisma.resource.findMany({
+      orderBy: { title: 'asc' },
+      include: {
+        lesson: {
+          select: {
+            id: true,
+            title: true,
+            module: {
+              select: {
+                id: true,
+                title: true,
+                course: {
+                  select: {
+                    id: true,
+                    courseCode: true,
+                    title: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return resources;
+  }
+
   // Get all resources for a lesson
   static async getResourcesByLesson(lessonId: string) {
     // Check if lesson exists

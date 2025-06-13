@@ -1,5 +1,32 @@
 import { CreateLessonRequest, UpdateLessonRequest, LessonWithDetails, LessonStatus } from '../types';
 export declare class LessonService {
+    static getAllLessons(): Promise<({
+        _count: {
+            resources: number;
+        };
+        module: {
+            id: string;
+            course: {
+                id: string;
+                title: string;
+            };
+            title: string;
+        };
+        instructor: {
+            id: string;
+            fullName: string;
+            title: string | null;
+        };
+    } & {
+        id: string;
+        moduleId: string;
+        instructorId: string;
+        title: string;
+        description: string | null;
+        lessonDate: Date | null;
+        zoomInfo: string | null;
+        lessonOrder: number;
+    })[]>;
     static getLessonsByModule(moduleId: string, userId?: string): Promise<any[]>;
     static getLessonById(lessonId: string, userId?: string): Promise<LessonWithDetails>;
     static createLesson(data: CreateLessonRequest): Promise<{
@@ -77,5 +104,32 @@ export declare class LessonService {
     }[]): Promise<{
         message: string;
     }>;
+    static getRecentLessons(): Promise<({
+        _count: {
+            resources: number;
+        };
+        module: {
+            id: string;
+            course: {
+                id: string;
+                title: string;
+            };
+            title: string;
+        };
+        instructor: {
+            id: string;
+            fullName: string;
+            title: string | null;
+        };
+    } & {
+        id: string;
+        moduleId: string;
+        instructorId: string;
+        title: string;
+        description: string | null;
+        lessonDate: Date | null;
+        zoomInfo: string | null;
+        lessonOrder: number;
+    })[]>;
 }
 //# sourceMappingURL=lesson.service.d.ts.map

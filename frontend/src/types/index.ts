@@ -106,11 +106,13 @@ export interface Lesson {
 }
 
 export interface CreateLessonRequest {
+  moduleId: string;
+  instructorId: string;
   title: string;
-  content: string;
-  module_id: string;
-  instructor_id: string;
-  order_index: number;
+  description?: string;
+  lessonDate?: string;
+  zoomInfo?: string;
+  lessonOrder: number;
 }
 
 // Resource types
@@ -126,11 +128,11 @@ export interface Resource {
 }
 
 export interface CreateResourceRequest {
-  type: ResourceType;
+  resourceType: ResourceType;
   title: string;
   url: string;
   description?: string;
-  lesson_id: string;
+  lessonId: string;
 }
 
 // Instructor types

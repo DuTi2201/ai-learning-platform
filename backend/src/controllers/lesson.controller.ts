@@ -4,6 +4,32 @@ import { asyncHandler } from '../middlewares/errorHandler';
 import { ApiResponse, CreateLessonRequest, UpdateLessonRequest, LessonStatus } from '../types';
 
 export class LessonController {
+  // Get all lessons (Admin only)
+  static getAllLessons = asyncHandler(async (req: Request, res: Response) => {
+    const lessons = await LessonService.getAllLessons();
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'All lessons retrieved successfully',
+      data: lessons,
+    };
+
+    res.json(response);
+  });
+
+  // Get recent lessons (Admin only)
+  static getRecentLessons = asyncHandler(async (req: Request, res: Response) => {
+    const lessons = await LessonService.getRecentLessons();
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Recent lessons retrieved successfully',
+      data: lessons,
+    };
+
+    res.json(response);
+  });
+
   // Get all lessons for a module
   static getLessonsByModule = asyncHandler(async (req: Request, res: Response) => {
     const { moduleId } = req.params;

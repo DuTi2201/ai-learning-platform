@@ -8,6 +8,24 @@ class LessonController {
 }
 exports.LessonController = LessonController;
 _a = LessonController;
+LessonController.getAllLessons = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const lessons = await lesson_service_1.LessonService.getAllLessons();
+    const response = {
+        success: true,
+        message: 'All lessons retrieved successfully',
+        data: lessons,
+    };
+    res.json(response);
+});
+LessonController.getRecentLessons = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const lessons = await lesson_service_1.LessonService.getRecentLessons();
+    const response = {
+        success: true,
+        message: 'Recent lessons retrieved successfully',
+        data: lessons,
+    };
+    res.json(response);
+});
 LessonController.getLessonsByModule = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { moduleId } = req.params;
     const userId = req.user?.id;

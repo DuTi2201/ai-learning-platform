@@ -102,9 +102,9 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
       const response = await fetch(`${API_BASE_URL}/api/users/instructors/list`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Include cookies for authentication
       });
       
       if (!response.ok) {
@@ -140,10 +140,10 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
     try {
       const lessonData: CreateLessonRequest = {
         title: formData.title,
-        content: formData.content,
-        module_id: formData.module_id,
-        instructor_id: formData.instructor_id,
-        order_index: formData.order_index
+        description: formData.content,
+        moduleId: formData.module_id,
+        instructorId: formData.instructor_id,
+        lessonOrder: formData.order_index
       };
 
       await lessonService.createLesson(lessonData);
@@ -195,9 +195,7 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        <Typography variant="h6">
-          Tạo bài học mới
-        </Typography>
+        Tạo bài học mới
       </DialogTitle>
       
       <form onSubmit={handleSubmit}>

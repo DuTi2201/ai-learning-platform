@@ -1,9 +1,10 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { body, param, query } from 'express-validator';
 import { UserController } from '../controllers/user.controller';
 import { checkAuth, checkAdmin, optionalAuth } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
 import { UserRole } from '../types';
+import { prisma } from '../config/database';
 
 const router = Router();
 
@@ -219,7 +220,30 @@ router.get(
   validate,
   checkAuth,
   checkAdmin,
-  UserController.getAllInstructors
+  async (req: Request, res: Response) => {
+    try {
+      // Get instructors from the Instructor table instead of User table
+      const instructors = await prisma.instructor.findMany({
+        orderBy: { fullName: 'asc' }
+      });
+      
+      res.json({
+        success: true,
+        data: instructors.map((instructor: any) => ({
+          id: instructor.id,
+          name: instructor.fullName,
+          email: instructor.fullName, // Using fullName as display name
+          title: instructor.title
+        }))
+      });
+    } catch (error) {
+      console.error('Error fetching instructors:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch instructors'
+      });
+    }
+  }
 );
 
 // Course assignment routes (Admin only)

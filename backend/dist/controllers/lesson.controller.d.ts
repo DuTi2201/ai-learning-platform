@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 export declare class LessonController {
+    static getAllLessons: (req: Request, res: Response, next: import("express").NextFunction) => void;
+    static getRecentLessons: (req: Request, res: Response, next: import("express").NextFunction) => void;
     static getLessonsByModule: (req: Request, res: Response, next: import("express").NextFunction) => void;
     static getLessonById: (req: Request, res: Response, next: import("express").NextFunction) => void;
     static createLesson: (req: Request, res: Response, next: import("express").NextFunction) => void;

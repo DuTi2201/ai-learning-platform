@@ -4,6 +4,19 @@ import { asyncHandler } from '../middlewares/errorHandler';
 import { ApiResponse, CreateResourceRequest, UpdateResourceRequest, ResourceType } from '../types';
 
 export class ResourceController {
+  // Get all resources
+  static getAllResources = asyncHandler(async (req: Request, res: Response) => {
+    const resources = await ResourceService.getAllResources();
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Resources retrieved successfully',
+      data: resources,
+    };
+
+    res.json(response);
+  });
+
   // Get all resources for a lesson
   static getResourcesByLesson = asyncHandler(async (req: Request, res: Response) => {
     const { lessonId } = req.params;

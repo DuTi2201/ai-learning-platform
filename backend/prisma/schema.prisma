@@ -170,11 +170,11 @@ enum EnrollmentType {
 }
 
 enum ResourceType {
-  PDF
-  QUIZ
+  DOCUMENT
+  VIDEO
   LINK
-  RECORDING
-  
+  FILE
+
   @@map("resource_type")
 }
 

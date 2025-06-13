@@ -5,6 +5,43 @@ const database_1 = require("../config/database");
 const types_1 = require("../types");
 const types_2 = require("../types");
 class LessonService {
+    static async getAllLessons() {
+        try {
+            const lessons = await database_1.prisma.lesson.findMany({
+                include: {
+                    instructor: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            title: true,
+                        },
+                    },
+                    module: {
+                        select: {
+                            id: true,
+                            title: true,
+                            course: {
+                                select: {
+                                    id: true,
+                                    title: true,
+                                },
+                            },
+                        },
+                    },
+                    _count: {
+                        select: {
+                            resources: true,
+                        },
+                    },
+                },
+            });
+            return lessons;
+        }
+        catch (error) {
+            console.error('Error in getAllLessons:', error);
+            throw error;
+        }
+    }
     static async getLessonsByModule(moduleId, userId) {
         const module = await database_1.prisma.module.findUnique({
             where: { id: moduleId },
@@ -360,6 +397,47 @@ class LessonService {
             data: { lessonOrder: order },
         })));
         return { message: 'Lessons reordered successfully' };
+    }
+    static async getRecentLessons() {
+        try {
+            const lessons = await database_1.prisma.lesson.findMany({
+                take: 20,
+                orderBy: {
+                    id: 'desc',
+                },
+                include: {
+                    instructor: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            title: true,
+                        },
+                    },
+                    module: {
+                        select: {
+                            id: true,
+                            title: true,
+                            course: {
+                                select: {
+                                    id: true,
+                                    title: true,
+                                },
+                            },
+                        },
+                    },
+                    _count: {
+                        select: {
+                            resources: true,
+                        },
+                    },
+                },
+            });
+            return lessons;
+        }
+        catch (error) {
+            console.error('Error in getRecentLessons:', error);
+            throw error;
+        }
     }
 }
 exports.LessonService = LessonService;

@@ -28,7 +28,7 @@ class ActivityService {
             },
             take: 5
         });
-        recentCompletedLessons.forEach(progress => {
+        recentCompletedLessons.forEach((progress) => {
             if (progress.completedAt) {
                 activities.push({
                     id: progress.id,
@@ -55,7 +55,7 @@ class ActivityService {
             },
             take: 3
         });
-        recentEnrollments.forEach(enrollment => {
+        recentEnrollments.forEach((enrollment) => {
             activities.push({
                 id: enrollment.id,
                 type: 'course_enrolled',
@@ -104,7 +104,7 @@ class ActivityService {
             return { currentStreak: 0, longestStreak: 0 };
         }
         const uniqueDays = [...new Set(completedLessons
-                .map(lesson => lesson.completedAt?.toDateString())
+                .map((lesson) => lesson.completedAt?.toDateString())
                 .filter(Boolean))].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
         let currentStreak = 0;
         let longestStreak = 0;

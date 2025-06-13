@@ -71,12 +71,12 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/courses', courseRoutes);
-app.use('/api/v1/modules', moduleRoutes);
-app.use('/api/v1/lessons', lessonRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/modules', moduleRoutes);
+app.use('/api/lessons', lessonRoutes);
 app.use('/api/v1/resources', resourceRoutes);
-app.use('/api/v1/users', userRoutes);
+app.use('/api/users', userRoutes);
 
 // Error handling middleware
 app.use(notFoundHandler);

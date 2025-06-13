@@ -9,6 +9,44 @@ import {
 } from '../types';
 
 export class LessonService {
+  // Get all lessons (Admin only)
+  static async getAllLessons() {
+    try {
+      const lessons = await prisma.lesson.findMany({
+        include: {
+          instructor: {
+            select: {
+              id: true,
+              fullName: true,
+              title: true,
+            },
+          },
+          module: {
+            select: {
+              id: true,
+              title: true,
+              course: {
+                select: {
+                  id: true,
+                  title: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              resources: true,
+            },
+          },
+        },
+      });
+      return lessons;
+    } catch (error) {
+      console.error('Error in getAllLessons:', error);
+      throw error;
+    }
+  }
+
   // Get all lessons for a module
   static async getLessonsByModule(moduleId: string, userId?: string) {
     // Check if module exists
@@ -441,5 +479,47 @@ export class LessonService {
     );
 
     return { message: 'Lessons reordered successfully' };
+  }
+
+  // Get recent lessons (Admin only)
+  static async getRecentLessons() {
+    try {
+      const lessons = await prisma.lesson.findMany({
+        take: 20, // Lấy 20 bài học gần nhất
+        orderBy: {
+          id: 'desc',
+        },
+        include: {
+          instructor: {
+            select: {
+              id: true,
+              fullName: true,
+              title: true,
+            },
+          },
+          module: {
+            select: {
+              id: true,
+              title: true,
+              course: {
+                select: {
+                  id: true,
+                  title: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              resources: true,
+            },
+          },
+        },
+      });
+      return lessons;
+    } catch (error) {
+      console.error('Error in getRecentLessons:', error);
+      throw error;
+    }
   }
 }

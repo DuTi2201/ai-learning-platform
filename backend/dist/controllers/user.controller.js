@@ -180,6 +180,22 @@ UserController.getUserStats = (0, errorHandler_1.asyncHandler)(async (req, res) 
     };
     return res.json(response);
 });
+UserController.getUsers = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { page = 1, limit = 10, search, role } = req.query;
+    const result = await user_service_1.UserService.getAllUsers({
+        page: parseInt(page),
+        limit: parseInt(limit),
+        search: search,
+        role: role,
+    });
+    const response = {
+        success: true,
+        message: 'Users retrieved successfully',
+        data: result.data,
+        pagination: result.pagination,
+    };
+    res.json(response);
+});
 UserController.getAllInstructors = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { page = 1, limit = 10, search } = req.query;
     const result = await user_service_1.UserService.getAllInstructors({

@@ -32,13 +32,26 @@ const createResourceValidation = [
     .trim()
     .isLength({ max: 1000 })
     .withMessage('Description must not exceed 1000 characters'),
-  body('type')
+  body('resourceType')
     .isIn(Object.values(ResourceType))
-    .withMessage('Type must be one of: DOCUMENT, VIDEO, LINK, FILE'),
+    .withMessage('Type must be one of: PDF, QUIZ, LINK, RECORDING'),
   body('url')
     .optional()
     .trim()
-    .isURL()
+    .custom((value) => {
+      if (!value) return true;
+      // Allow protocol-relative URLs (starting with //)
+      if (value.startsWith('//')) {
+        return true;
+      }
+      // Validate normal URLs
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        throw new Error('URL must be a valid URL');
+      }
+    })
     .withMessage('URL must be a valid URL'),
   body('lessonId')
     .isUUID()
@@ -58,10 +71,10 @@ const updateResourceValidation = [
     .trim()
     .isLength({ max: 1000 })
     .withMessage('Description must not exceed 1000 characters'),
-  body('type')
+  body('resourceType')
     .optional()
     .isIn(Object.values(ResourceType))
-    .withMessage('Type must be one of: DOCUMENT, VIDEO, LINK, FILE'),
+    .withMessage('Type must be one of: PDF, QUIZ, LINK, RECORDING'),
   body('url')
     .optional()
     .trim()
@@ -70,9 +83,9 @@ const updateResourceValidation = [
 ];
 
 const resourceTypeValidation = [
-  param('type')
+ query('type')
     .isIn(Object.values(ResourceType))
-    .withMessage('Type must be one of: DOCUMENT, VIDEO, LINK, FILE'),
+    .withMessage('Type must be one of: PDF, QUIZ, LINK, RECORDING'),
 ];
 
 const searchValidation = [
@@ -85,7 +98,7 @@ const searchValidation = [
   query('type')
     .optional()
     .isIn(Object.values(ResourceType))
-    .withMessage('Type must be one of: DOCUMENT, VIDEO, LINK, FILE'),
+    .withMessage('Type must be one of: PDF, QUIZ, LINK, RECORDING'),
   query('lessonId')
     .optional()
     .isUUID()
@@ -107,9 +120,9 @@ const bulkCreateValidation = [
     .trim()
     .isLength({ max: 1000 })
     .withMessage('Each resource description must not exceed 1000 characters'),
-  body('resources.*.type')
-    .isIn(Object.values(ResourceType))
-    .withMessage('Each resource type must be one of: DOCUMENT, VIDEO, LINK, FILE'),
+  body('*.resourceType')
+      .isIn(Object.values(ResourceType))
+      .withMessage('Each resource type must be one of: PDF, QUIZ, LINK, RECORDING'),
   body('resources.*.url')
     .optional()
     .trim()
@@ -127,11 +140,11 @@ router.get(
 );
 
 router.get(
-  '/:resourceId',
-  resourceIdValidation,
+  '/search',
+  searchValidation,
   validate,
   optionalAuth,
-  ResourceController.getResourceById
+  ResourceController.searchResources
 );
 
 router.get(
@@ -142,12 +155,19 @@ router.get(
   ResourceController.getResourcesByType
 );
 
+// Get all resources
 router.get(
-  '/search',
-  searchValidation,
+  '/',
+  optionalAuth,
+  ResourceController.getAllResources
+);
+
+router.get(
+  '/:resourceId',
+  resourceIdValidation,
   validate,
   optionalAuth,
-  ResourceController.searchResources
+  ResourceController.getResourceById
 );
 
 // Admin only routes

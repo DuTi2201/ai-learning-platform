@@ -194,7 +194,7 @@ export class UserService {
     }
 
     // Use transaction to ensure data consistency
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // Update user role
       const updatedUser = await tx.user.update({
         where: { id: userId },
@@ -435,7 +435,7 @@ export class UserService {
   }
 
   // Get all users with pagination and search (Admin only)
-  static async getAllUsers(
+  static async getUsers(
     params: PaginationParams & { search?: string; role?: string }
   ): Promise<PaginatedResponse<any>> {
     const { page = 1, limit = 10, search, role } = params;
@@ -691,9 +691,9 @@ export class UserService {
 
     // Calculate progress for each course
     const coursesWithProgress = await Promise.all(
-      enrollments.map(async (enrollment) => {
+      enrollments.map(async (enrollment: any) => {
         const totalLessons = enrollment.course.modules.reduce(
-          (total, module) => total + module.lessons.length,
+          (total: number, module: any) => total + module.lessons.length,
           0
         );
 

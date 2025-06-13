@@ -16,10 +16,10 @@ const createLessonValidation = [
         .withMessage('Title is required')
         .isLength({ min: 3, max: 200 })
         .withMessage('Title must be between 3 and 200 characters'),
-    (0, express_validator_1.body)('content')
+    (0, express_validator_1.body)('description')
         .optional()
         .isLength({ max: 10000 })
-        .withMessage('Content must not exceed 10000 characters'),
+        .withMessage('Description must not exceed 10000 characters'),
     (0, express_validator_1.body)('videoUrl')
         .optional()
         .isURL()
@@ -86,6 +86,8 @@ const reorderLessonsValidation = [
         .isInt({ min: 1 })
         .withMessage('Each order must be a positive integer'),
 ];
+router.get('/', auth_1.checkAuth, auth_1.checkAdmin, lesson_controller_1.LessonController.getAllLessons);
+router.get('/recent', auth_1.optionalAuth, lesson_controller_1.LessonController.getRecentLessons);
 router.get('/module/:moduleId', auth_1.optionalAuth, moduleIdValidation, validate_1.validate, lesson_controller_1.LessonController.getLessonsByModule);
 router.get('/:lessonId', auth_1.optionalAuth, lessonIdValidation, validate_1.validate, lesson_controller_1.LessonController.getLessonById);
 router.use(auth_1.checkAuth);

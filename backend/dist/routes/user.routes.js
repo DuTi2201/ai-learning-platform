@@ -6,6 +6,7 @@ const user_controller_1 = require("../controllers/user.controller");
 const auth_1 = require("../middlewares/auth");
 const validate_1 = require("../middlewares/validate");
 const types_1 = require("../types");
+const database_1 = require("../config/database");
 const router = (0, express_1.Router)();
 const userIdValidation = [
     (0, express_validator_1.param)('userId')
@@ -77,12 +78,20 @@ const paginationValidation = [
     (0, express_validator_1.query)('search')
         .optional()
         .trim()
-        .isLength({ min: 2 })
-        .withMessage('Search query must be at least 2 characters'),
+        .custom((value) => {
+        if (!value || value === '')
+            return true;
+        return value.length >= 2;
+    })
+        .withMessage('Search query must be at least 2 characters when provided'),
     (0, express_validator_1.query)('role')
         .optional()
-        .isIn(Object.values(types_1.UserRole))
-        .withMessage('Role must be one of: STUDENT, ADMIN'),
+        .custom((value) => {
+        if (value === 'ALL')
+            return true;
+        return Object.values(types_1.UserRole).includes(value);
+    })
+        .withMessage('Role must be one of: STUDENT, ADMIN, INSTRUCTOR, USER, or ALL'),
 ];
 router.get('/me', auth_1.checkAuth, user_controller_1.UserController.getCurrentUser);
 router.put('/me', updateCurrentUserValidation, validate_1.validate, auth_1.checkAuth, user_controller_1.UserController.updateCurrentUser);
@@ -97,7 +106,30 @@ router.get('/', paginationValidation, validate_1.validate, auth_1.checkAuth, aut
 router.put('/:userId', userIdValidation, updateUserValidation, validate_1.validate, auth_1.checkAuth, auth_1.checkAdmin, user_controller_1.UserController.updateUser);
 router.patch('/:userId/role', userIdValidation, updateRoleValidation, validate_1.validate, auth_1.checkAuth, auth_1.checkAdmin, user_controller_1.UserController.updateUserRole);
 router.delete('/:userId', userIdValidation, validate_1.validate, auth_1.checkAuth, auth_1.checkAdmin, user_controller_1.UserController.deleteUser);
-router.get('/instructors/list', paginationValidation, validate_1.validate, auth_1.checkAuth, auth_1.checkAdmin, user_controller_1.UserController.getAllInstructors);
+router.get('/admin/list', paginationValidation, validate_1.validate, auth_1.checkAuth, auth_1.checkAdmin, user_controller_1.UserController.getAllUsers);
+router.get('/instructors/list', paginationValidation, validate_1.validate, auth_1.checkAuth, auth_1.checkAdmin, async (req, res) => {
+    try {
+        const instructors = await database_1.prisma.instructor.findMany({
+            orderBy: { fullName: 'asc' }
+        });
+        res.json({
+            success: true,
+            data: instructors.map((instructor) => ({
+                id: instructor.id,
+                name: instructor.fullName,
+                email: instructor.fullName,
+                title: instructor.title
+            }))
+        });
+    }
+    catch (error) {
+        console.error('Error fetching instructors:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch instructors'
+        });
+    }
+});
 router.post('/assign-course', [
     (0, express_validator_1.body)('userId')
         .isUUID()

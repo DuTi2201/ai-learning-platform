@@ -135,8 +135,11 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
         }
 
         const resourcesData = validResources.map(resource => ({
-          ...resource,
-          lesson_id: formData.lesson_id
+          title: resource.title,
+          resourceType: resource.type,
+          url: resource.url,
+          description: resource.description,
+          lessonId: formData.lesson_id
         }));
 
         await resourceService.bulkCreateResources(formData.lesson_id, resourcesData);
@@ -153,10 +156,10 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
         // Single resource create
         const resourceData: CreateResourceRequest = {
           title: formData.title,
-          type: formData.type,
+          resourceType: formData.type,
           url: formData.url,
           description: formData.description,
-          lesson_id: formData.lesson_id
+          lessonId: formData.lesson_id
         };
 
         await resourceService.createResource(resourceData);

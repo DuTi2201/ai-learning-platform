@@ -148,13 +148,30 @@ class UserService {
         if (!user) {
             throw new types_1.AppError('User not found', 404);
         }
-        const updatedUser = await database_1.prisma.user.update({
-            where: { id: userId },
-            data: {
-                role,
-            },
+        const result = await database_1.prisma.$transaction(async (tx) => {
+            const updatedUser = await tx.user.update({
+                where: { id: userId },
+                data: {
+                    role,
+                },
+            });
+            if (role === types_2.UserRole.INSTRUCTOR) {
+                const existingInstructor = await tx.instructor.findFirst({
+                    where: { fullName: user.fullName },
+                });
+                if (!existingInstructor) {
+                    await tx.instructor.create({
+                        data: {
+                            fullName: user.fullName,
+                            title: 'Giảng viên',
+                            bio: `Giảng viên ${user.fullName}`,
+                        },
+                    });
+                }
+            }
+            return updatedUser;
         });
-        return updatedUser;
+        return result;
     }
     static async deleteUser(userId) {
         const user = await database_1.prisma.user.findUnique({
@@ -321,6 +338,57 @@ class UserService {
                 completedLessons: completedLessonsCount,
                 totalLessonsStarted: totalProgressCount,
                 completionRate: totalProgressCount > 0 ? (completedLessonsCount / totalProgressCount) * 100 : 0,
+            },
+        };
+    }
+    static async getUsers(params) {
+        const { page = 1, limit = 10, search, role } = params;
+        const skip = (page - 1) * limit;
+        const where = {};
+        if (role && role !== 'ALL') {
+            where.role = role;
+        }
+        if (search) {
+            where.OR = [
+                { fullName: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
+            ];
+        }
+        const [users, total] = await Promise.all([
+            database_1.prisma.user.findMany({
+                where,
+                skip,
+                take: limit,
+                select: {
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    role: true,
+                    profilePictureUrl: true,
+                    createdAt: true,
+                    _count: {
+                        select: {
+                            enrollments: true,
+                            lessonProgress: true,
+                        },
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+            }),
+            database_1.prisma.user.count({ where }),
+        ]);
+        const totalPages = Math.ceil(total / limit);
+        return {
+            success: true,
+            message: 'Users retrieved successfully',
+            data: users,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages,
+                hasNext: page < totalPages,
+                hasPrev: page > 1,
             },
         };
     }

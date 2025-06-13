@@ -58,12 +58,12 @@ app.get('/health', (req, res) => {
         uptime: process.uptime(),
     });
 });
-app.use('/api/v1/auth', auth_routes_1.default);
-app.use('/api/v1/courses', course_routes_1.default);
-app.use('/api/v1/modules', module_routes_1.default);
-app.use('/api/v1/lessons', lesson_routes_1.default);
+app.use('/api/auth', auth_routes_1.default);
+app.use('/api/courses', course_routes_1.default);
+app.use('/api/modules', module_routes_1.default);
+app.use('/api/lessons', lesson_routes_1.default);
 app.use('/api/v1/resources', resource_routes_1.default);
-app.use('/api/v1/users', user_routes_1.default);
+app.use('/api/users', user_routes_1.default);
 app.use(notFoundHandler_1.notFoundHandler);
 app.use(errorHandler_1.errorHandler);
 app.listen(PORT, () => {

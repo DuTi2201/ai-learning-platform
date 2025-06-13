@@ -46,7 +46,7 @@ export class ActivityService {
     });
 
     // Thêm các bài học đã hoàn thành vào activities
-    recentCompletedLessons.forEach(progress => {
+    recentCompletedLessons.forEach((progress: any) => {
       if (progress.completedAt) {
         activities.push({
           id: progress.id,
@@ -77,7 +77,7 @@ export class ActivityService {
     });
 
     // Thêm các đăng ký khóa học vào activities
-    recentEnrollments.forEach(enrollment => {
+    recentEnrollments.forEach((enrollment: any) => {
       activities.push({
         id: enrollment.id,
         type: 'course_enrolled',
@@ -141,9 +141,9 @@ export class ActivityService {
     // Chuyển đổi thành các ngày duy nhất
     const uniqueDays = [...new Set(
       completedLessons
-        .map(lesson => lesson.completedAt?.toDateString())
+        .map((lesson: any) => lesson.completedAt?.toDateString())
         .filter(Boolean)
-    )].sort((a, b) => new Date(b!).getTime() - new Date(a!).getTime());
+    )].sort((a: any, b: any) => new Date(b!).getTime() - new Date(a!).getTime());
 
     let currentStreak = 0;
     let longestStreak = 0;
@@ -157,8 +157,8 @@ export class ActivityService {
       currentStreak = 1;
       
       for (let i = 1; i < uniqueDays.length; i++) {
-        const currentDay = new Date(uniqueDays[i-1]!);
-        const previousDay = new Date(uniqueDays[i]!);
+        const currentDay = new Date(uniqueDays[i-1] as string);
+        const previousDay = new Date(uniqueDays[i] as string);
         const diffTime = currentDay.getTime() - previousDay.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
@@ -172,8 +172,8 @@ export class ActivityService {
 
     // Tính longest streak
     for (let i = 1; i < uniqueDays.length; i++) {
-      const currentDay = new Date(uniqueDays[i-1]!);
-      const previousDay = new Date(uniqueDays[i]!);
+      const currentDay = new Date(uniqueDays[i-1] as string);
+      const previousDay = new Date(uniqueDays[i] as string);
       const diffTime = currentDay.getTime() - previousDay.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       

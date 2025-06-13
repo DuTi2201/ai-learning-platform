@@ -44,15 +44,7 @@ export declare class UserService {
         role: import("@/generated/prisma").$Enums.UserRole;
         createdAt: Date;
     }>;
-    static updateUserRole(userId: string, role: UserRole): Promise<{
-        id: string;
-        googleId: string;
-        email: string;
-        fullName: string;
-        profilePictureUrl: string | null;
-        role: import("@/generated/prisma").$Enums.UserRole;
-        createdAt: Date;
-    }>;
+    static updateUserRole(userId: string, role: UserRole): Promise<any>;
     static deleteUser(userId: string): Promise<{
         message: string;
     }>;
@@ -94,6 +86,10 @@ export declare class UserService {
             completionRate: number;
         };
     }>;
+    static getUsers(params: PaginationParams & {
+        search?: string;
+        role?: string;
+    }): Promise<PaginatedResponse<any>>;
     static getAllInstructors(params: PaginationParams & {
         search?: string;
     }): Promise<PaginatedResponse<any>>;
@@ -117,27 +113,6 @@ export declare class UserService {
         assignedBy: string | null;
     }>;
     static removeCourseFromUser(userId: string, courseId: string): Promise<void>;
-    static getUserAssignedCourses(userId: string): Promise<{
-        course: {
-            modules: undefined;
-            id: string;
-            createdAt: Date;
-            title: string;
-            description: string | null;
-            courseCode: string;
-            createdById: string;
-        };
-        progress: {
-            totalLessons: number;
-            completedLessons: number;
-            progressPercentage: number;
-        };
-        id: string;
-        userId: string;
-        courseId: string;
-        enrollmentDate: Date;
-        enrollmentType: import("@/generated/prisma").$Enums.EnrollmentType;
-        assignedBy: string | null;
-    }[]>;
+    static getUserAssignedCourses(userId: string): Promise<any[]>;
 }
 //# sourceMappingURL=user.service.d.ts.map
