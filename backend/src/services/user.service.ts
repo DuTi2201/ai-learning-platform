@@ -404,7 +404,6 @@ export class UserService {
       stats: {
         totalEnrollments: enrollmentsCount,
         completedLessons: completedLessonsCount,
-        totalLessonsStarted: totalProgressCount,
         completionRate: totalProgressCount > 0 ? (completedLessonsCount / totalProgressCount) * 100 : 0,
       },
     };
