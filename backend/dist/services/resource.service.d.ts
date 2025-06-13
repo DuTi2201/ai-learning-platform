@@ -1,115 +1,14 @@
 import { CreateResourceRequest, UpdateResourceRequest, ResourceType } from '../types';
 export declare class ResourceService {
-    static getResourcesByLesson(lessonId: string): Promise<{
-        id: string;
-        title: string;
-        lessonId: string;
-        resourceType: import("@/generated/prisma").$Enums.ResourceType;
-        url: string;
-        deadline: Date | null;
-    }[]>;
-    static getResourceById(resourceId: string): Promise<{
-        lesson: {
-            id: string;
-            title: string;
-            module: {
-                id: string;
-                course: {
-                    id: string;
-                    courseCode: string;
-                    title: string;
-                };
-                title: string;
-            };
-        };
-    } & {
-        id: string;
-        title: string;
-        lessonId: string;
-        resourceType: import("@/generated/prisma").$Enums.ResourceType;
-        url: string;
-        deadline: Date | null;
-    }>;
-    static createResource(data: CreateResourceRequest): Promise<{
-        lesson: {
-            id: string;
-            title: string;
-        };
-    } & {
-        id: string;
-        title: string;
-        lessonId: string;
-        resourceType: import("@/generated/prisma").$Enums.ResourceType;
-        url: string;
-        deadline: Date | null;
-    }>;
-    static updateResource(resourceId: string, data: UpdateResourceRequest): Promise<{
-        lesson: {
-            id: string;
-            title: string;
-        };
-    } & {
-        id: string;
-        title: string;
-        lessonId: string;
-        resourceType: import("@/generated/prisma").$Enums.ResourceType;
-        url: string;
-        deadline: Date | null;
-    }>;
+    static getResourcesByLesson(lessonId: string): Promise<any>;
+    static getResourceById(resourceId: string): Promise<any>;
+    static createResource(data: CreateResourceRequest): Promise<any>;
+    static updateResource(resourceId: string, data: UpdateResourceRequest): Promise<any>;
     static deleteResource(resourceId: string): Promise<{
         message: string;
     }>;
-    static getResourcesByType(type: ResourceType, lessonId?: string): Promise<({
-        lesson: {
-            id: string;
-            title: string;
-            module: {
-                id: string;
-                course: {
-                    id: string;
-                    courseCode: string;
-                    title: string;
-                };
-                title: string;
-            };
-        };
-    } & {
-        id: string;
-        title: string;
-        lessonId: string;
-        resourceType: import("@/generated/prisma").$Enums.ResourceType;
-        url: string;
-        deadline: Date | null;
-    })[]>;
-    static searchResources(query: string, type?: ResourceType, lessonId?: string): Promise<({
-        lesson: {
-            id: string;
-            title: string;
-            module: {
-                id: string;
-                course: {
-                    id: string;
-                    courseCode: string;
-                    title: string;
-                };
-                title: string;
-            };
-        };
-    } & {
-        id: string;
-        title: string;
-        lessonId: string;
-        resourceType: import("@/generated/prisma").$Enums.ResourceType;
-        url: string;
-        deadline: Date | null;
-    })[]>;
-    static bulkCreateResources(lessonId: string, resources: Omit<CreateResourceRequest, 'lessonId'>[]): Promise<{
-        id: string;
-        title: string;
-        lessonId: string;
-        resourceType: import("@/generated/prisma").$Enums.ResourceType;
-        url: string;
-        deadline: Date | null;
-    }[]>;
+    static getResourcesByType(type: ResourceType, lessonId?: string): Promise<any>;
+    static searchResources(query: string, type?: ResourceType, lessonId?: string): Promise<any>;
+    static bulkCreateResources(lessonId: string, resources: Omit<CreateResourceRequest, 'lessonId'>[]): Promise<any>;
 }
 //# sourceMappingURL=resource.service.d.ts.map

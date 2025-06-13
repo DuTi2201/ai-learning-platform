@@ -7,6 +7,5 @@ export declare class InstructorController {
     static deleteInstructor: (req: Request, res: Response, next: import("express").NextFunction) => void;
     static getInstructorLessons: (req: Request, res: Response, next: import("express").NextFunction) => void;
     static getInstructorStats: (req: Request, res: Response, next: import("express").NextFunction) => void;
-    static searchByExpertise: (req: Request, res: Response, next: import("express").NextFunction) => void;
 }
 //# sourceMappingURL=instructor.controller.d.ts.map

@@ -28,10 +28,12 @@ class InstructorService {
                     },
                 },
             }),
-            database_1.prisma.instructor.count({ where }),
+            database_1.prisma.instructor.count({ where: Object.keys(where).length > 0 ? where : undefined }),
         ]);
         const totalPages = Math.ceil(total / limit);
         return {
+            success: true,
+            message: 'Instructors retrieved successfully',
             data: instructors,
             pagination: {
                 page,
@@ -48,31 +50,14 @@ class InstructorService {
             where: { id: instructorId },
             include: {
                 lessons: {
-                    select: {
-                        id: true,
-                        title: true,
-                        description: true,
-                        lessonOrder: true,
+                    include: {
                         module: {
-                            select: {
-                                id: true,
-                                title: true,
-                                course: {
-                                    select: {
-                                        id: true,
-                                        courseCode: true,
-                                        title: true,
-                                    },
-                                },
+                            include: {
+                                course: true,
                             },
                         },
                     },
                     orderBy: { lessonOrder: 'asc' },
-                },
-                _count: {
-                    select: {
-                        lessons: true,
-                    },
                 },
             },
         });
@@ -82,12 +67,6 @@ class InstructorService {
         return instructor;
     }
     static async createInstructor(data) {
-        const existingInstructor = await database_1.prisma.instructor.findUnique({
-            where: { email: data.email },
-        });
-        if (existingInstructor) {
-            throw new types_1.AppError('Instructor with this email already exists', 400);
-        }
         const instructor = await database_1.prisma.instructor.create({
             data,
             include: {
@@ -106,14 +85,6 @@ class InstructorService {
         });
         if (!existingInstructor) {
             throw new types_1.AppError('Instructor not found', 404);
-        }
-        if (data.email && data.email !== existingInstructor.email) {
-            const emailExists = await database_1.prisma.instructor.findUnique({
-                where: { email: data.email },
-            });
-            if (emailExists) {
-                throw new types_1.AppError('Instructor with this email already exists', 400);
-            }
         }
         const instructor = await database_1.prisma.instructor.update({
             where: { id: instructorId },
@@ -159,20 +130,11 @@ class InstructorService {
         }
         const lessons = await database_1.prisma.lesson.findMany({
             where: { instructorId },
-            orderBy: { order: 'asc' },
+            orderBy: { lessonOrder: 'asc' },
             include: {
                 module: {
-                    select: {
-                        id: true,
-                        title: true,
-                        moduleOrder: true,
-                        course: {
-                            select: {
-                                id: true,
-                                courseCode: true,
-                                title: true,
-                            },
-                        },
+                    include: {
+                        course: true,
                     },
                 },
                 _count: {
@@ -197,16 +159,12 @@ class InstructorService {
             }),
             database_1.prisma.lesson.findMany({
                 where: { instructorId },
-                select: {
-                    module: {
-                        select: {
-                            courseId: true,
-                        },
-                    },
+                include: {
+                    module: true,
                 },
                 distinct: ['moduleId'],
-            }).then(lessons => {
-                const courseIds = new Set(lessons.map(lesson => lesson.module.courseId));
+            }).then((lessons) => {
+                const courseIds = new Set(lessons.map((lesson) => lesson.module.courseId));
                 return courseIds.size;
             }),
             database_1.prisma.enrollment.findMany({
@@ -223,11 +181,8 @@ class InstructorService {
                         },
                     },
                 },
-                select: {
-                    userId: true,
-                },
                 distinct: ['userId'],
-            }).then(enrollments => enrollments.length),
+            }).then((enrollments) => enrollments.length),
         ]);
         return {
             instructor,
@@ -237,25 +192,6 @@ class InstructorService {
                 totalStudents: studentsCount,
             },
         };
-    }
-    static async searchByExpertise(expertise) {
-        const instructors = await database_1.prisma.instructor.findMany({
-            where: {
-                expertise: {
-                    contains: expertise,
-                    mode: 'insensitive',
-                },
-            },
-            orderBy: { fullName: 'asc' },
-            include: {
-                _count: {
-                    select: {
-                        lessons: true,
-                    },
-                },
-            },
-        });
-        return instructors;
     }
 }
 exports.InstructorService = InstructorService;

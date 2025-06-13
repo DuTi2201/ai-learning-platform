@@ -59,7 +59,7 @@ export class CourseService {
     ]);
 
     return {
-      courses: courses.map((course) => ({
+      courses: courses.map((course: any) => ({
         ...course,
         isEnrolled: userId ? course.enrollments?.length > 0 : false,
         enrollments: undefined, // Remove from response
@@ -135,9 +135,9 @@ export class CourseService {
     const transformedCourse = {
       ...course,
       isEnrolled: userId ? course.enrollments?.length > 0 : false,
-      modules: course.modules.map((module) => ({
-        ...module,
-        lessons: module.lessons.map((lesson) => ({
+      modules: course.modules.map((module: any) => ({
+          ...module,
+          lessons: module.lessons.map((lesson: any) => ({
           ...lesson,
           progress: userId && lesson.lessonProgress?.[0] ? lesson.lessonProgress[0] : null,
           lessonProgress: undefined, // Remove from response
@@ -151,18 +151,13 @@ export class CourseService {
 
   // Create new course
   static async createCourse(data: CreateCourseRequest, createdById: string) {
-    // Check if course code already exists
-    const existingCourse = await prisma.course.findUnique({
-      where: { courseCode: data.courseCode },
-    });
-
-    if (existingCourse) {
-      throw new AppError('Course code already exists', 400);
-    }
+    // Generate unique course code
+    const courseCode = `COURSE_${Date.now()}`;
 
     const course = await prisma.course.create({
       data: {
         ...data,
+        courseCode,
         createdById,
       },
       include: {
@@ -341,7 +336,7 @@ export class CourseService {
       orderBy: { enrollmentDate: 'desc' },
     });
 
-    return enrollments.map((enrollment) => ({
+    return enrollments.map((enrollment: any) => ({
       ...enrollment,
       course: {
         ...enrollment.course,

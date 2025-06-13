@@ -13,7 +13,7 @@ router.get('/google', passport_1.default.authenticate('google', {
 }));
 router.get('/google/callback', passport_1.default.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed` }), (0, errorHandler_1.asyncHandler)(async (req, res) => {
     if (!req.user) {
-        return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/callback?error=auth_failed`);
     }
     const token = (0, auth_1.generateToken)(req.user.id);
     res.cookie('token', token, {
@@ -22,7 +22,7 @@ router.get('/google/callback', passport_1.default.authenticate('google', { failu
         sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard?auth=success`);
+    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?auth=success`);
 }));
 router.get('/me', auth_1.checkAuth, (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const response = {

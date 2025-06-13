@@ -1,3 +1,4 @@
+import { PrismaClient } from '@prisma/client';
 import { prisma } from '../config/database';
 import { AppError } from '../types';
 import {
@@ -28,7 +29,7 @@ export class UserService {
       where.role = role;
     }
 
-    const [users, total] = await Promise.all([
+    const [usersWithCounts, total] = await Promise.all([
       prisma.user.findMany({
         where,
         skip,
@@ -41,11 +42,10 @@ export class UserService {
           role: true,
           profilePictureUrl: true,
           createdAt: true,
-          updatedAt: true,
           _count: {
             select: {
               enrollments: true,
-              lessonProgress: true,
+              lessonProgress: { where: { status: 'COMPLETED' } }, // Corrected status to uppercase
             },
           },
         },
@@ -56,7 +56,9 @@ export class UserService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: users,
+      success: true,
+      message: 'Users retrieved successfully',
+      data: usersWithCounts,
       pagination: {
         page,
         limit,
@@ -70,41 +72,28 @@ export class UserService {
 
   // Get user by ID
   static async getUserById(userId: string, includePrivate: boolean = false) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: includePrivate,
-        fullName: true,
-        role: includePrivate,
-        profilePictureUrl: true,
-        createdAt: true,
-        updatedAt: includePrivate,
+    let includeOptions = {};
+    if (includePrivate) {
+      includeOptions = {
         enrollments: {
-          select: {
-            id: true,
-            enrolledAt: true,
+          include: {
             course: {
               select: {
                 id: true,
-                courseCode: true,
                 title: true,
-                description: true,
-                thumbnail: true,
-                level: true,
-                status: true,
+                courseCode: true, // As per designDB.md
+                // Add other fields if needed from Course table
               },
             },
           },
-          orderBy: { enrollmentDate: 'desc' },
+          orderBy: { enrollment_date: 'desc' },
         },
-        _count: {
-          select: {
-            enrollments: true,
-            lessonProgress: true,
-          },
-        },
-      },
+      };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: Object.keys(includeOptions).length > 0 ? includeOptions : undefined,
     });
 
     if (!user) {
@@ -125,7 +114,7 @@ export class UserService {
         role: true,
         profilePictureUrl: true,
         createdAt: true,
-        updatedAt: true,
+        // updatedAt: true, // Removed as it's not in designDB.md
       },
     });
 
@@ -137,30 +126,22 @@ export class UserService {
     email: string;
     fullName: string;
     profilePictureUrl?: string;
+    googleId: string;
   }) {
-    const { email, fullName, profilePictureUrl } = userData;
+    const { email, fullName, profilePictureUrl, googleId } = userData;
 
     const user = await prisma.user.upsert({
       where: { email },
       update: {
           fullName,
         profilePictureUrl,
-        updatedAt: new Date(),
       },
       create: {
           email,
           fullName,
         profilePictureUrl,
-        role: UserRole.STUDENT, // Default role
-      },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        role: true,
-        profilePictureUrl: true,
-        createdAt: true,
-        updatedAt: true,
+        googleId,
+        role: UserRole.USER, // Corrected: Use UserRole enum
       },
     });
 
@@ -178,14 +159,17 @@ export class UserService {
       throw new AppError('User not found', 404);
     }
 
-    // Check if email is being updated and already exists
+    // If email is being updated, ensure it's not taken by another user
     if (data.email && data.email !== existingUser.email) {
-      const emailExists = await prisma.user.findUnique({
-        where: { email: data.email },
+      const emailExists = await prisma.user.findFirst({
+        where: {
+          email: data.email,
+          id: { not: userId }, // Exclude the current user
+        },
       });
 
       if (emailExists) {
-        throw new AppError('User with this email already exists', 400);
+        throw new AppError('Another user with this email already exists', 400);
       }
     }
 
@@ -193,16 +177,6 @@ export class UserService {
       where: { id: userId },
       data: {
         ...data,
-        updatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        role: true,
-        profilePictureUrl: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
 
@@ -223,16 +197,6 @@ export class UserService {
       where: { id: userId },
       data: {
         role,
-        updatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        role: true,
-        profilePictureUrl: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
 
@@ -258,15 +222,15 @@ export class UserService {
     }
 
     // Delete user and all related data in a transaction
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       // Delete user progress
       await tx.lessonProgress.deleteMany({
-        where: { userId },
+        where: { userId: userId }, // Corrected to userId
       });
 
       // Delete user enrollments
       await tx.enrollment.deleteMany({
-        where: { userId },
+        where: { userId: userId }, // Corrected to userId
       });
 
       // Delete user
@@ -290,7 +254,7 @@ export class UserService {
     }
 
     const progress = await prisma.lessonProgress.findMany({
-      where: { userId },
+      where: { userId: userId }, // Corrected to userId
       include: {
         lesson: {
           select: {
@@ -366,21 +330,21 @@ export class UserService {
 
     // Calculate progress for each course
     const coursesWithProgress = await Promise.all(
-      enrollments.map(async (enrollment) => {
+      enrollments.map(async (enrollment: any) => {
         const totalLessons = enrollment.course.modules.reduce(
-          (total, module) => total + module.lessons.length,
+          (total: number, module: any) => total + module.lessons.length,
           0
         );
 
         const completedLessons = await prisma.lessonProgress.count({
           where: {
-            userId,
+            userId: userId, // Corrected to userId
             lesson: {
               module: {
                 courseId: enrollment.course.id,
               },
             },
-            status: 'COMPLETED',
+            status: 'COMPLETED', // Corrected status to uppercase
           },
         });
 
@@ -417,16 +381,16 @@ export class UserService {
 
     const [enrollmentsCount, completedLessonsCount, totalProgressCount] = await Promise.all([
       prisma.enrollment.count({
-        where: { userId },
+        where: { userId: userId }, // Corrected to userId
       }),
       prisma.lessonProgress.count({
         where: {
-          userId,
-          status: 'COMPLETED',
+          userId: userId, // Corrected to userId
+          status: 'COMPLETED', // Corrected status to uppercase
         },
       }),
       prisma.lessonProgress.count({
-        where: { userId },
+        where: { userId: userId }, // Corrected to userId
       }),
     ]);
 

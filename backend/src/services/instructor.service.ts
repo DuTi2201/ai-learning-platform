@@ -38,12 +38,14 @@ export class InstructorService {
           },
         },
       }),
-      prisma.instructor.count({ where }),
+      prisma.instructor.count({ where: Object.keys(where).length > 0 ? where : undefined }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
 
     return {
+      success: true,
+      message: 'Instructors retrieved successfully',
       data: instructors,
       pagination: {
         page,
@@ -62,31 +64,14 @@ export class InstructorService {
       where: { id: instructorId },
       include: {
         lessons: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            lessonOrder: true,
+          include: {
             module: {
-              select: {
-                id: true,
-                title: true,
-                course: {
-                  select: {
-                    id: true,
-                    courseCode: true,
-                    title: true,
-                  },
-                },
+              include: {
+                course: true,
               },
             },
           },
           orderBy: { lessonOrder: 'asc' },
-        },
-        _count: {
-          select: {
-            lessons: true,
-          },
         },
       },
     });
@@ -100,15 +85,6 @@ export class InstructorService {
 
   // Create new instructor
   static async createInstructor(data: CreateInstructorRequest) {
-    // Check if email already exists
-    const existingInstructor = await prisma.instructor.findUnique({
-      where: { email: data.email },
-    });
-
-    if (existingInstructor) {
-      throw new AppError('Instructor with this email already exists', 400);
-    }
-
     const instructor = await prisma.instructor.create({
       data,
       include: {
@@ -132,17 +108,6 @@ export class InstructorService {
 
     if (!existingInstructor) {
       throw new AppError('Instructor not found', 404);
-    }
-
-    // Check if email is being updated and already exists
-    if (data.email && data.email !== existingInstructor.email) {
-      const emailExists = await prisma.instructor.findUnique({
-        where: { email: data.email },
-      });
-
-      if (emailExists) {
-        throw new AppError('Instructor with this email already exists', 400);
-      }
     }
 
     const instructor = await prisma.instructor.update({
@@ -205,20 +170,11 @@ export class InstructorService {
 
     const lessons = await prisma.lesson.findMany({
       where: { instructorId },
-      orderBy: { order: 'asc' },
+      orderBy: { lessonOrder: 'asc' },
       include: {
         module: {
-          select: {
-            id: true,
-            title: true,
-            moduleOrder: true,
-            course: {
-              select: {
-                id: true,
-                courseCode: true,
-                title: true,
-              },
-            },
+          include: {
+            course: true,
           },
         },
         _count: {
@@ -251,17 +207,13 @@ export class InstructorService {
       // Total courses involved in
       prisma.lesson.findMany({
         where: { instructorId },
-        select: {
-          module: {
-            select: {
-              courseId: true,
-            },
-          },
+        include: {
+          module: true,
         },
         distinct: ['moduleId'],
-      }).then(lessons => {
+      }).then((lessons: any) => {
         const courseIds = new Set(
-          lessons.map(lesson => lesson.module.courseId)
+          lessons.map((lesson: any) => lesson.module.courseId)
         );
         return courseIds.size;
       }),
@@ -280,11 +232,8 @@ export class InstructorService {
             },
           },
         },
-        select: {
-          userId: true,
-        },
         distinct: ['userId'],
-      }).then(enrollments => enrollments.length),
+      }).then((enrollments: any) => enrollments.length),
     ]);
 
     return {
@@ -297,25 +246,4 @@ export class InstructorService {
     };
   }
 
-  // Search instructors by expertise
-  static async searchByExpertise(expertise: string) {
-    const instructors = await prisma.instructor.findMany({
-      where: {
-        expertise: {
-          contains: expertise,
-          mode: 'insensitive' as const,
-        },
-      },
-      orderBy: { fullName: 'asc' },
-      include: {
-        _count: {
-          select: {
-            lessons: true,
-          },
-        },
-      },
-    });
-
-    return instructors;
-  }
 }

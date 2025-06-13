@@ -254,7 +254,7 @@ class ModuleService {
         if (!course) {
             throw new types_1.AppError('Course not found', 404);
         }
-        const moduleIds = moduleOrders.map(item => item.moduleId);
+        const moduleIds = moduleOrders.map((item) => item.moduleId);
         const modules = await database_1.prisma.module.findMany({
             where: {
                 id: { in: moduleIds },

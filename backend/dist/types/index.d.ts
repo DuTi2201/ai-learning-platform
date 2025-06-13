@@ -1,5 +1,5 @@
-import { UserRole, ResourceType, LessonStatus } from '../generated/prisma';
 import { Request } from 'express';
+import { UserRole, ResourceType, LessonStatus } from '../generated/prisma';
 export { UserRole, ResourceType, LessonStatus };
 declare global {
     namespace Express {
@@ -25,6 +25,7 @@ export interface ApiResponse<T = any> {
         total: number;
         totalPages: number;
         hasNext: boolean;
+        hasPrev: boolean;
     };
 }
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {
@@ -34,6 +35,7 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
         total: number;
         totalPages: number;
         hasNext: boolean;
+        hasPrev: boolean;
     };
 }
 export interface LoginResponse {
@@ -120,6 +122,44 @@ export interface LessonWithResources {
     };
     resources: ResourceResponse[];
 }
+export interface LessonWithDetails {
+    id: string;
+    title: string;
+    description: string | null;
+    lessonDate: Date | null;
+    zoomInfo: string | null;
+    lessonOrder: number;
+    instructor: {
+        id: string;
+        fullName: string;
+        title: string | null;
+    };
+    resources: ResourceResponse[];
+    module: {
+        id: string;
+        title: string;
+        course: {
+            id: string;
+            courseCode: string;
+            title: string;
+        };
+    };
+}
+export interface ModuleWithDetails {
+    id: string;
+    title: string;
+    description: string | null;
+    moduleOrder: number;
+    course: {
+        id: string;
+        courseCode: string;
+        title: string;
+    };
+    lessons: LessonWithResources[];
+    _count: {
+        lessons: number;
+    };
+}
 export interface CreateResourceRequest {
     lessonId: string;
     resourceType: ResourceType;
@@ -173,6 +213,7 @@ export interface UpdateUserRequest {
     fullName?: string;
     profilePictureUrl?: string;
     role?: UserRole;
+    email?: string;
 }
 export interface AuthenticatedRequest extends Request {
     user?: Express.User;

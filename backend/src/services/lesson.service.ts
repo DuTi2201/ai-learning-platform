@@ -1,3 +1,4 @@
+import { PrismaClient } from '@prisma/client';
 import { prisma } from '../config/database';
 import { AppError } from '../types';
 import {
@@ -48,7 +49,7 @@ export class LessonService {
     });
 
     // Transform the data to include progress information
-    return lessons.map((lesson) => ({
+    return lessons.map((lesson: any) => ({
       ...lesson,
       progress: userId && lesson.lessonProgress?.[0] ? lesson.lessonProgress[0] : null,
       lessonProgress: undefined, // Remove from response
@@ -146,7 +147,7 @@ export class LessonService {
     const existingLesson = await prisma.lesson.findFirst({
       where: {
         moduleId: data.moduleId,
-        lessonOrder,
+        lessonOrder: lessonOrder,
       },
     });
 
@@ -156,9 +157,9 @@ export class LessonService {
         where: {
           moduleId: data.moduleId,
           lessonOrder: { gte: lessonOrder },
-        },
-        data: {
-          lessonOrder: { increment: 1 },
+      },
+      data: {
+        lessonOrder: { increment: 1 },
         },
       });
     }
@@ -166,7 +167,7 @@ export class LessonService {
     const lesson = await prisma.lesson.create({
       data: {
         ...data,
-        lessonOrder,
+        lessonOrder: lessonOrder,
       },
       include: {
         module: {
@@ -417,7 +418,7 @@ export class LessonService {
     }
 
     // Validate that all lessons belong to the module
-    const lessonIds = lessonOrders.map(item => item.lessonId);
+    const lessonIds = lessonOrders.map((item: any) => item.lessonId);
     const lessons = await prisma.lesson.findMany({
       where: {
         id: { in: lessonIds },
@@ -431,7 +432,7 @@ export class LessonService {
 
     // Update lesson orders in a transaction
     await prisma.$transaction(
-      lessonOrders.map(({ lessonId, order }) =>
+      lessonOrders.map(({ lessonId, order }: any) =>
         prisma.lesson.update({
           where: { id: lessonId },
           data: { lessonOrder: order },

@@ -73,6 +73,7 @@ router.get('/:moduleId', optionalAuth, moduleIdValidation, validate, ModuleContr
 router.use(checkAuth);
 router.use(checkAdmin);
 
+router.get('/', ModuleController.getAllModules);
 router.post('/', createModuleValidation, validate, ModuleController.createModule);
 router.put('/:moduleId', moduleIdValidation, updateModuleValidation, validate, ModuleController.updateModule);
 router.delete('/:moduleId', moduleIdValidation, validate, ModuleController.deleteModule);

@@ -83,21 +83,4 @@ InstructorController.getInstructorStats = (0, errorHandler_1.asyncHandler)(async
     };
     res.json(response);
 });
-InstructorController.searchByExpertise = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const { expertise } = req.query;
-    if (!expertise) {
-        const response = {
-            success: false,
-            message: 'Expertise parameter is required',
-        };
-        return res.status(400).json(response);
-    }
-    const instructors = await instructor_service_1.InstructorService.searchByExpertise(expertise);
-    const response = {
-        success: true,
-        message: 'Instructors search completed successfully',
-        data: instructors,
-    };
-    return res.json(response);
-});
 //# sourceMappingURL=instructor.controller.js.map

@@ -13,7 +13,7 @@ datasource db {
 
 // Users table - Lưu trữ thông tin người dùng đăng nhập bằng Google
 model User {
-  id                   String             @id @default(cuid())
+  id                   String             @id @default(uuid())
   googleId             String             @unique @map("google_id")
   email                String             @unique
   fullName             String             @map("full_name")
@@ -31,7 +31,7 @@ model User {
 
 // Courses table - Lưu trữ thông tin về các khóa học
 model Course {
-  id          String       @id @default(cuid())
+  id          String       @id @default(uuid())
   courseCode  String       @unique @map("course_code")
   title       String
   description String?
@@ -48,7 +48,7 @@ model Course {
 
 // Modules table - Lưu trữ các học phần trong một khóa học
 model Module {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   courseId    String   @map("course_id")
   title       String
   description String?
@@ -63,7 +63,7 @@ model Module {
 
 // Instructors table - Lưu trữ thông tin giảng viên
 model Instructor {
-  id       String   @id @default(cuid())
+  id       String   @id @default(uuid())
   fullName String   @unique @map("full_name")
   title    String?
   bio      String?
@@ -76,7 +76,7 @@ model Instructor {
 
 // Lessons table - Lưu trữ thông tin chi tiết về từng bài học
 model Lesson {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid())
   moduleId     String   @map("module_id")
   instructorId String   @map("instructor_id")
   title        String
@@ -96,7 +96,7 @@ model Lesson {
 
 // Resources table - Lưu trữ tất cả các tài nguyên liên quan đến một bài học
 model Resource {
-  id           String       @id @default(cuid())
+  id           String       @id @default(uuid())
   lessonId     String       @map("lesson_id")
   resourceType ResourceType @map("resource_type")
   title        String
@@ -111,7 +111,7 @@ model Resource {
 
 // Enrollments table - Quản lý việc người dùng nào đã đăng ký khóa học nào
 model Enrollment {
-  id             String   @id @default(cuid())
+  id             String   @id @default(uuid())
   userId         String   @map("user_id")
   courseId       String   @map("course_id")
   enrollmentDate DateTime @default(now()) @map("enrollment_date")
@@ -126,7 +126,7 @@ model Enrollment {
 
 // Lesson_Progress table - Theo dõi tiến độ học tập của người dùng cho từng bài học
 model LessonProgress {
-  id          String            @id @default(cuid())
+  id          String            @id @default(uuid())
   userId      String            @map("user_id")
   lessonId    String            @map("lesson_id")
   status      LessonStatus      @default(NOT_STARTED)

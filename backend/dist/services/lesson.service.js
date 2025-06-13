@@ -120,7 +120,7 @@ class LessonService {
         const existingLesson = await database_1.prisma.lesson.findFirst({
             where: {
                 moduleId: data.moduleId,
-                lessonOrder,
+                lessonOrder: lessonOrder,
             },
         });
         if (existingLesson) {
@@ -137,7 +137,7 @@ class LessonService {
         const lesson = await database_1.prisma.lesson.create({
             data: {
                 ...data,
-                lessonOrder,
+                lessonOrder: lessonOrder,
             },
             include: {
                 module: {
@@ -345,7 +345,7 @@ class LessonService {
         if (!module) {
             throw new types_1.AppError('Module not found', 404);
         }
-        const lessonIds = lessonOrders.map(item => item.lessonId);
+        const lessonIds = lessonOrders.map((item) => item.lessonId);
         const lessons = await database_1.prisma.lesson.findMany({
             where: {
                 id: { in: lessonIds },

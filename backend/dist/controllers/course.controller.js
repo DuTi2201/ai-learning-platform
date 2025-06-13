@@ -16,8 +16,12 @@ CourseController.getAllCourses = (0, errorHandler_1.asyncHandler)(async (req, re
         message: 'Courses retrieved successfully',
         data: result.courses,
         pagination: {
-            ...result.pagination,
-            hasNext: result.pagination.page < result.pagination.totalPages
+            page: result.pagination.page,
+            limit: result.pagination.limit,
+            total: result.pagination.total,
+            totalPages: result.pagination.totalPages,
+            hasNext: result.pagination.page < result.pagination.totalPages,
+            hasPrev: result.pagination.page > 1,
         },
     };
     res.json(response);

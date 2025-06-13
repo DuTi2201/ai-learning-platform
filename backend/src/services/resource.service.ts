@@ -1,3 +1,4 @@
+import { PrismaClient } from '@prisma/client';
 import { prisma } from '../config/database';
 import { AppError } from '../types';
 import {
@@ -72,11 +73,11 @@ export class ResourceService {
     }
 
     // Validate resource type and URL
-    if (data.type === ResourceType.LINK && !data.url) {
+    if (data.resourceType === ResourceType.LINK && !data.url) {
       throw new AppError('URL is required for link resources', 400);
     }
 
-    if (data.type === ResourceType.PDF && !data.url) {
+    if (data.resourceType === ResourceType.PDF && !data.url) {
       throw new AppError('File URL is required for PDF resources', 400);
     }
 
@@ -107,7 +108,7 @@ export class ResourceService {
     }
 
     // Validate resource type and URL if type is being updated
-    const newType = data.type || existingResource.type;
+    const newType = data.resourceType || existingResource.resourceType;
     const newUrl = data.url !== undefined ? data.url : existingResource.url;
 
     if (newType === ResourceType.LINK && !newUrl) {
@@ -265,18 +266,18 @@ export class ResourceService {
 
     // Validate all resources
     for (const resource of resources) {
-      if (resource.type === ResourceType.LINK && !resource.url) {
+      if (resource.resourceType === ResourceType.LINK && !resource.url) {
         throw new AppError(`URL is required for link resource: ${resource.title}`, 400);
       }
 
-      if (resource.type === ResourceType.PDF && !resource.url) {
+      if (resource.resourceType === ResourceType.PDF && !resource.url) {
         throw new AppError(`File URL is required for PDF resource: ${resource.title}`, 400);
       }
     }
 
     // Create all resources in a transaction
     const createdResources = await prisma.$transaction(
-      resources.map(resource =>
+      resources.map((resource: any) =>
         prisma.resource.create({
           data: {
             ...resource,

@@ -114,26 +114,4 @@ export class InstructorController {
     res.json(response);
   });
 
-  // Search instructors by expertise
-  static searchByExpertise = asyncHandler(async (req: Request, res: Response) => {
-    const { expertise } = req.query;
-
-    if (!expertise) {
-      const response: ApiResponse = {
-        success: false,
-        message: 'Expertise parameter is required',
-      };
-      return res.status(400).json(response);
-    }
-
-    const instructors = await InstructorService.searchByExpertise(expertise as string);
-
-    const response: ApiResponse = {
-      success: true,
-      message: 'Instructors search completed successfully',
-      data: instructors,
-    };
-
-    return res.json(response);
-  });
 }

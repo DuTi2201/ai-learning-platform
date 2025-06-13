@@ -1,3 +1,4 @@
+import { PrismaClient } from '@prisma/client';
 import { prisma } from '../config/database';
 import { AppError } from '../types';
 import {
@@ -7,6 +8,28 @@ import {
 } from '../types';
 
 export class ModuleService {
+  // Get all modules (Admin only)
+  static async getAllModules() {
+    const modules = await prisma.module.findMany({
+      orderBy: [{ courseId: 'asc' }, { moduleOrder: 'asc' }],
+      include: {
+        course: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        _count: {
+          select: {
+            lessons: true,
+          },
+        },
+      },
+    });
+
+    return modules;
+  }
+
   // Get all modules for a course
   static async getModulesByCourse(courseId: string, userId?: string) {
     // Check if course exists
@@ -57,9 +80,9 @@ export class ModuleService {
     });
 
     // Transform the data to include progress information
-    return modules.map((module) => ({
+    return modules.map((module: any) => ({
       ...module,
-      lessons: module.lessons.map((lesson) => ({
+      lessons: module.lessons.map((lesson: any) => ({
         ...lesson,
         progress: userId && lesson.lessonProgress?.[0] ? lesson.lessonProgress[0] : null,
         lessonProgress: undefined, // Remove from response
@@ -118,7 +141,7 @@ export class ModuleService {
     // Transform the data to include progress information
     const transformedModule = {
       ...module,
-      lessons: module.lessons.map((lesson) => ({
+      lessons: module.lessons.map((lesson: any) => ({
         ...lesson,
         progress: userId && lesson.lessonProgress?.[0] ? lesson.lessonProgress[0] : null,
         lessonProgress: undefined, // Remove from response
@@ -305,7 +328,7 @@ export class ModuleService {
     }
 
     // Validate that all modules belong to the course
-    const moduleIds = moduleOrders.map(item => item.moduleId);
+    const moduleIds = moduleOrders.map((item: any) => item.moduleId);
     const modules = await prisma.module.findMany({
       where: {
         id: { in: moduleIds },
@@ -319,7 +342,7 @@ export class ModuleService {
 
     // Update module orders in a transaction
     await prisma.$transaction(
-      moduleOrders.map(({ moduleId, order }) =>
+      moduleOrders.map(({ moduleId, order }: any) =>
         prisma.module.update({
           where: { id: moduleId },
           data: { moduleOrder: order },

@@ -14,8 +14,12 @@ export class CourseController {
       message: 'Courses retrieved successfully',
       data: result.courses,
       pagination: {
-        ...result.pagination,
-        hasNext: result.pagination.page < result.pagination.totalPages
+        page: result.pagination.page,
+        limit: result.pagination.limit,
+        total: result.pagination.total,
+        totalPages: result.pagination.totalPages,
+        hasNext: result.pagination.page < result.pagination.totalPages,
+        hasPrev: result.pagination.page > 1, // Added hasPrev
       },
     };
 

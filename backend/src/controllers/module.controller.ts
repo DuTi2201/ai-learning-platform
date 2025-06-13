@@ -4,6 +4,19 @@ import { asyncHandler } from '../middlewares/errorHandler';
 import { ApiResponse, CreateModuleRequest, UpdateModuleRequest } from '../types';
 
 export class ModuleController {
+  // Get all modules (Admin only)
+  static getAllModules = asyncHandler(async (req: Request, res: Response) => {
+    const modules = await ModuleService.getAllModules();
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'All modules retrieved successfully',
+      data: modules,
+    };
+
+    res.json(response);
+  });
+
   // Get all modules for a course
   static getModulesByCourse = asyncHandler(async (req: Request, res: Response) => {
     const { courseId } = req.params;

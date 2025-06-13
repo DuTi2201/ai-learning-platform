@@ -55,10 +55,10 @@ class ResourceService {
         if (!lesson) {
             throw new types_1.AppError('Lesson not found', 404);
         }
-        if (data.type === types_2.ResourceType.LINK && !data.url) {
+        if (data.resourceType === types_2.ResourceType.LINK && !data.url) {
             throw new types_1.AppError('URL is required for link resources', 400);
         }
-        if (data.type === types_2.ResourceType.PDF && !data.url) {
+        if (data.resourceType === types_2.ResourceType.PDF && !data.url) {
             throw new types_1.AppError('File URL is required for PDF resources', 400);
         }
         const resource = await database_1.prisma.resource.create({
@@ -81,7 +81,7 @@ class ResourceService {
         if (!existingResource) {
             throw new types_1.AppError('Resource not found', 404);
         }
-        const newType = data.type || existingResource.type;
+        const newType = data.resourceType || existingResource.resourceType;
         const newUrl = data.url !== undefined ? data.url : existingResource.url;
         if (newType === types_2.ResourceType.LINK && !newUrl) {
             throw new types_1.AppError('URL is required for link resources', 400);
@@ -207,14 +207,14 @@ class ResourceService {
             throw new types_1.AppError('Lesson not found', 404);
         }
         for (const resource of resources) {
-            if (resource.type === types_2.ResourceType.LINK && !resource.url) {
+            if (resource.resourceType === types_2.ResourceType.LINK && !resource.url) {
                 throw new types_1.AppError(`URL is required for link resource: ${resource.title}`, 400);
             }
-            if (resource.type === types_2.ResourceType.PDF && !resource.url) {
+            if (resource.resourceType === types_2.ResourceType.PDF && !resource.url) {
                 throw new types_1.AppError(`File URL is required for PDF resource: ${resource.title}`, 400);
             }
         }
-        const createdResources = await database_1.prisma.$transaction(resources.map(resource => database_1.prisma.resource.create({
+        const createdResources = await database_1.prisma.$transaction(resources.map((resource) => database_1.prisma.resource.create({
             data: {
                 ...resource,
                 lessonId,

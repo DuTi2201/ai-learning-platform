@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { prisma } from '../config/database';
 import { AppError } from '../types';
 import { asyncHandler } from './errorHandler';
@@ -36,9 +36,16 @@ export const checkAuth = asyncHandler(
     }
     // Check if user is authenticated via session (Passport)
     else if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+      console.log('User authenticated via session:', req.user);
       req.user = req.user as Express.User;
       return next();
     }
+
+    console.log('No authentication found:');
+    console.log('- Authorization header:', req.headers.authorization);
+    console.log('- Cookie token:', req.cookies?.token);
+    console.log('- Session authenticated:', req.isAuthenticated?.());
+    console.log('- Session user:', req.user);
 
     if (!token) {
       throw new AppError('Access denied. No token provided.', 401);
@@ -155,11 +162,5 @@ export const generateToken = (userId: string): string => {
     throw new Error('JWT_SECRET is not defined');
   }
   
-  return jwt.sign(
-    { userId },
-    secret as string,
-    {
-      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-    }
-  );
+  return jwt.sign({ userId }, secret, { expiresIn: '7d' }) as string;
 };

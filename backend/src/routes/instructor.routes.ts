@@ -93,15 +93,6 @@ const paginationValidation = [
     .withMessage('Search query must be at least 2 characters'),
 ];
 
-const expertiseSearchValidation = [
-  query('expertise')
-    .trim()
-    .notEmpty()
-    .withMessage('Expertise parameter is required')
-    .isLength({ min: 2 })
-    .withMessage('Expertise must be at least 2 characters'),
-];
-
 // Public routes (with optional authentication)
 router.get(
   '/',
@@ -109,14 +100,6 @@ router.get(
   validate,
   optionalAuth,
   InstructorController.getAllInstructors
-);
-
-router.get(
-  '/search/expertise',
-  expertiseSearchValidation,
-  validate,
-  optionalAuth,
-  InstructorController.searchByExpertise
 );
 
 router.get(

@@ -88,16 +88,7 @@ const paginationValidation = [
         .isLength({ min: 2 })
         .withMessage('Search query must be at least 2 characters'),
 ];
-const expertiseSearchValidation = [
-    (0, express_validator_1.query)('expertise')
-        .trim()
-        .notEmpty()
-        .withMessage('Expertise parameter is required')
-        .isLength({ min: 2 })
-        .withMessage('Expertise must be at least 2 characters'),
-];
 router.get('/', paginationValidation, validate_1.validate, auth_1.optionalAuth, instructor_controller_1.InstructorController.getAllInstructors);
-router.get('/search/expertise', expertiseSearchValidation, validate_1.validate, auth_1.optionalAuth, instructor_controller_1.InstructorController.searchByExpertise);
 router.get('/:instructorId', instructorIdValidation, validate_1.validate, auth_1.optionalAuth, instructor_controller_1.InstructorController.getInstructorById);
 router.get('/:instructorId/lessons', instructorIdValidation, validate_1.validate, auth_1.optionalAuth, instructor_controller_1.InstructorController.getInstructorLessons);
 router.get('/:instructorId/stats', instructorIdValidation, validate_1.validate, auth_1.optionalAuth, instructor_controller_1.InstructorController.getInstructorStats);
