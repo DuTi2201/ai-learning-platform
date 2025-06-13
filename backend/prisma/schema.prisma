@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users table - Lưu trữ thông tin người dùng đăng nhập bằng Google
+model User {
+  id                   String             @id @default(cuid())
+  googleId             String             @unique @map("google_id")
+  email                String             @unique
+  fullName             String             @map("full_name")
+  profilePictureUrl    String?            @map("profile_picture_url")
+  role                 UserRole           @default(USER)
+  createdAt            DateTime           @default(now()) @map("created_at")
+  
+  // Relations
+  enrollments          Enrollment[]
+  lessonProgress       LessonProgress[]
+  createdCourses       Course[]           @relation("CourseCreator")
+  
+  @@map("users")
+}
+
+// Courses table - Lưu trữ thông tin về các khóa học
+model Course {
+  id          String       @id @default(cuid())
+  courseCode  String       @unique @map("course_code")
+  title       String
+  description String?
+  createdById String       @map("created_by")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  
+  // Relations
+  createdBy   User         @relation("CourseCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  modules     Module[]
+  enrollments Enrollment[]
+  
+  @@map("courses")
+}
+
+// Modules table - Lưu trữ các học phần trong một khóa học
+model Module {
+  id          String   @id @default(cuid())
+  courseId    String   @map("course_id")
+  title       String
+  description String?
+  moduleOrder Int      @map("module_order")
+  
+  // Relations
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons     Lesson[]
+  
+  @@map("modules")
+}
+
+// Instructors table - Lưu trữ thông tin giảng viên
+model Instructor {
+  id       String   @id @default(cuid())
+  fullName String   @unique @map("full_name")
+  title    String?
+  bio      String?
+  
+  // Relations
+  lessons  Lesson[]
+  
+  @@map("instructors")
+}
+
+// Lessons table - Lưu trữ thông tin chi tiết về từng bài học
+model Lesson {
+  id           String   @id @default(cuid())
+  moduleId     String   @map("module_id")
+  instructorId String   @map("instructor_id")
+  title        String
+  description  String?
+  lessonDate   DateTime? @map("lesson_date")
+  zoomInfo     String?   @map("zoom_info")
+  lessonOrder  Int       @map("lesson_order")
+  
+  // Relations
+  module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  instructor     Instructor       @relation(fields: [instructorId], references: [id], onDelete: Restrict)
+  resources      Resource[]
+  lessonProgress LessonProgress[]
+  
+  @@map("lessons")
+}
+
+// Resources table - Lưu trữ tất cả các tài nguyên liên quan đến một bài học
+model Resource {
+  id           String       @id @default(cuid())
+  lessonId     String       @map("lesson_id")
+  resourceType ResourceType @map("resource_type")
+  title        String
+  url          String
+  deadline     DateTime?
+  
+  // Relations
+  lesson       Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  @@map("resources")
+}
+
+// Enrollments table - Quản lý việc người dùng nào đã đăng ký khóa học nào
+model Enrollment {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  courseId       String   @map("course_id")
+  enrollmentDate DateTime @default(now()) @map("enrollment_date")
+  
+  // Relations
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+// Lesson_Progress table - Theo dõi tiến độ học tập của người dùng cho từng bài học
+model LessonProgress {
+  id          String            @id @default(cuid())
+  userId      String            @map("user_id")
+  lessonId    String            @map("lesson_id")
+  status      LessonStatus      @default(NOT_STARTED)
+  completedAt DateTime?         @map("completed_at")
+  
+  // Relations
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson      Lesson            @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, lessonId])
+  @@map("lesson_progress")
+}
+
+// Session table - Lưu trữ session cho express-session
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String   // session data
+  expiresAt DateTime @map("expires_at")
+  
+  @@map("sessions")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  USER
+  
+  @@map("user_role")
+}
+
+enum ResourceType {
+  PDF
+  QUIZ
+  LINK
+  RECORDING
+  
+  @@map("resource_type")
+}
+
+enum LessonStatus {
+  NOT_STARTED
+  COMPLETED
+  
+  @@map("lesson_status")
+}
