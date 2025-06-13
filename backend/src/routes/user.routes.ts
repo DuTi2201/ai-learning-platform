@@ -83,12 +83,18 @@ const paginationValidation = [
   query('search')
     .optional()
     .trim()
-    .isLength({ min: 2 })
-    .withMessage('Search query must be at least 2 characters'),
+    .custom((value) => {
+      if (!value || value === '') return true;
+      return value.length >= 2;
+    })
+    .withMessage('Search query must be at least 2 characters when provided'),
   query('role')
     .optional()
-    .isIn(Object.values(UserRole))
-    .withMessage('Role must be one of: STUDENT, ADMIN'),
+    .custom((value) => {
+      if (value === 'ALL') return true;
+      return Object.values(UserRole).includes(value);
+    })
+    .withMessage('Role must be one of: STUDENT, ADMIN, INSTRUCTOR, USER, or ALL'),
 ];
 
 // Current user routes (protected)
@@ -194,6 +200,68 @@ router.delete(
   checkAuth,
   checkAdmin,
   UserController.deleteUser
+);
+
+// User management routes (Admin only)
+router.get(
+  '/admin/list',
+  paginationValidation,
+  validate,
+  checkAuth,
+  checkAdmin,
+  UserController.getAllUsers
+);
+
+// Instructor management routes (Admin only)
+router.get(
+  '/instructors/list',
+  paginationValidation,
+  validate,
+  checkAuth,
+  checkAdmin,
+  UserController.getAllInstructors
+);
+
+// Course assignment routes (Admin only)
+router.post(
+  '/assign-course',
+  [
+    body('userId')
+      .isUUID()
+      .withMessage('User ID must be a valid UUID'),
+    body('courseId')
+      .isUUID()
+      .withMessage('Course ID must be a valid UUID'),
+  ],
+  validate,
+  checkAuth,
+  checkAdmin,
+  UserController.assignCourseToUser
+);
+
+router.delete(
+  '/:userId/courses/:courseId',
+  [
+    param('userId')
+      .isUUID()
+      .withMessage('User ID must be a valid UUID'),
+    param('courseId')
+      .isUUID()
+      .withMessage('Course ID must be a valid UUID'),
+  ],
+  validate,
+  checkAuth,
+  checkAdmin,
+  UserController.removeCourseFromUser
+);
+
+// Get user's assigned courses
+router.get(
+  '/:userId/assigned-courses',
+  userIdValidation,
+  validate,
+  checkAuth,
+  UserController.getUserAssignedCourses
 );
 
 export default router;

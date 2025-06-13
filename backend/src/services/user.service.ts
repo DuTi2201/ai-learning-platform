@@ -193,14 +193,38 @@ export class UserService {
       throw new AppError('User not found', 404);
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        role,
-      },
+    // Use transaction to ensure data consistency
+    const result = await prisma.$transaction(async (tx) => {
+      // Update user role
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: {
+          role,
+        },
+      });
+
+      // If role is INSTRUCTOR, automatically create instructor record
+      if (role === UserRole.INSTRUCTOR) {
+        // Check if instructor record already exists
+        const existingInstructor = await tx.instructor.findFirst({
+          where: { fullName: user.fullName },
+        });
+
+        if (!existingInstructor) {
+          await tx.instructor.create({
+            data: {
+              fullName: user.fullName,
+              title: 'Giảng viên',
+              bio: `Giảng viên ${user.fullName}`,
+            },
+          });
+        }
+      }
+
+      return updatedUser;
     });
 
-    return updatedUser;
+    return result;
   }
 
   // Delete user (Admin only)
@@ -404,8 +428,304 @@ export class UserService {
       stats: {
         totalEnrollments: enrollmentsCount,
         completedLessons: completedLessonsCount,
+        totalLessonsStarted: totalProgressCount,
         completionRate: totalProgressCount > 0 ? (completedLessonsCount / totalProgressCount) * 100 : 0,
       },
     };
+  }
+
+  // Get all users with pagination and search (Admin only)
+  static async getAllUsers(
+    params: PaginationParams & { search?: string; role?: string }
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10, search, role } = params;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    if (role && role !== 'ALL') {
+      where.role = role as UserRole;
+    }
+
+    if (search) {
+      where.OR = [
+        { fullName: { contains: search, mode: 'insensitive' as const } },
+        { email: { contains: search, mode: 'insensitive' as const } },
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          profilePictureUrl: true,
+          createdAt: true,
+          _count: {
+            select: {
+              enrollments: true,
+              lessonProgress: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+    
+    return {
+      success: true,
+      message: 'Users retrieved successfully',
+      data: users,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
+    };
+  }
+
+  // Get all instructors with pagination and search (Admin only)
+  static async getAllInstructors(
+    params: PaginationParams & { search?: string }
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10, search } = params;
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      role: UserRole.INSTRUCTOR,
+    };
+
+    if (search) {
+      where.OR = [
+        { fullName: { contains: search, mode: 'insensitive' as const } },
+        { email: { contains: search, mode: 'insensitive' as const } },
+      ];
+    }
+
+    const [instructorsWithCounts, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          profilePictureUrl: true,
+          createdAt: true,
+          _count: {
+            select: {
+              createdCourses: true,
+            },
+          },
+        },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      success: true,
+      message: 'Instructors retrieved successfully',
+      data: instructorsWithCounts,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
+    };
+  }
+
+  // Assign course to user (Admin only)
+  static async assignCourseToUser(userId: string, courseId: string, adminId: string) {
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Check if course exists
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      throw new AppError('Course not found', 404);
+    }
+
+    // Check if enrollment already exists
+    const existingEnrollment = await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId,
+        },
+      },
+    });
+
+    if (existingEnrollment) {
+      throw new AppError('User is already enrolled in this course', 400);
+    }
+
+    // Create enrollment with admin assignment
+    const enrollment = await prisma.enrollment.create({
+      data: {
+        userId,
+        courseId,
+        enrollmentType: 'ADMIN_ASSIGNED',
+        assignedBy: adminId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+        course: {
+          select: {
+            id: true,
+            title: true,
+            courseCode: true,
+          },
+        },
+      },
+    });
+
+    return enrollment;
+  }
+
+  // Remove course assignment from user (Admin only)
+  static async removeCourseFromUser(userId: string, courseId: string) {
+    // Check if enrollment exists
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId,
+        },
+      },
+    });
+
+    if (!enrollment) {
+      throw new AppError('Enrollment not found', 404);
+    }
+
+    // Delete enrollment
+    await prisma.enrollment.delete({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId,
+        },
+      },
+    });
+
+    // Also delete related lesson progress
+    await prisma.lessonProgress.deleteMany({
+      where: {
+        userId,
+        lesson: {
+          module: {
+            courseId,
+          },
+        },
+      },
+    });
+  }
+
+  // Get user's assigned courses (Admin assigned courses)
+  static async getUserAssignedCourses(userId: string) {
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const enrollments = await prisma.enrollment.findMany({
+      where: {
+        userId,
+        enrollmentType: 'ADMIN_ASSIGNED',
+      },
+      include: {
+        course: {
+          include: {
+            modules: {
+              include: {
+                lessons: {
+                  select: {
+                    id: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { enrollmentDate: 'desc' },
+    });
+
+    // Calculate progress for each course
+    const coursesWithProgress = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        const totalLessons = enrollment.course.modules.reduce(
+          (total, module) => total + module.lessons.length,
+          0
+        );
+
+        const completedLessons = await prisma.lessonProgress.count({
+          where: {
+            userId,
+            status: 'COMPLETED',
+            lesson: {
+              module: {
+                courseId: enrollment.courseId,
+              },
+            },
+          },
+        });
+
+        const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+
+        return {
+          ...enrollment,
+          course: {
+            ...enrollment.course,
+            modules: undefined, // Remove modules from response
+          },
+          progress: {
+            totalLessons,
+            completedLessons,
+            progressPercentage: Math.round(progressPercentage * 100) / 100,
+          },
+        };
+      })
+    );
+
+    return coursesWithProgress;
   }
 }

@@ -4,6 +4,25 @@ exports.ModuleService = void 0;
 const database_1 = require("../config/database");
 const types_1 = require("../types");
 class ModuleService {
+    static async getAllModules() {
+        const modules = await database_1.prisma.module.findMany({
+            orderBy: [{ courseId: 'asc' }, { moduleOrder: 'asc' }],
+            include: {
+                course: {
+                    select: {
+                        id: true,
+                        title: true,
+                    },
+                },
+                _count: {
+                    select: {
+                        lessons: true,
+                    },
+                },
+            },
+        });
+        return modules;
+    }
     static async getModulesByCourse(courseId, userId) {
         const course = await database_1.prisma.course.findUnique({
             where: { id: courseId },

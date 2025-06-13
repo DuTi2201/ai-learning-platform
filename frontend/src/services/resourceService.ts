@@ -55,9 +55,4 @@ export const resourceService = {
     const response = await api.get<ApiResponse<Resource[]>>(`/v1/resources/lesson/${lessonId}`);
     return response.data.data;
   },
-
-  async getAllResources(): Promise<Resource[]> {
-    const response = await api.get<ApiResponse<Resource[]>>('/v1/resources');
-    return response.data.data;
-  },
 };

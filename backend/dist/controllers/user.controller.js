@@ -180,4 +180,58 @@ UserController.getUserStats = (0, errorHandler_1.asyncHandler)(async (req, res) 
     };
     return res.json(response);
 });
+UserController.getAllInstructors = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { page = 1, limit = 10, search } = req.query;
+    const result = await user_service_1.UserService.getAllInstructors({
+        page: parseInt(page),
+        limit: parseInt(limit),
+        search: search,
+    });
+    const response = {
+        success: true,
+        message: 'Instructors retrieved successfully',
+        data: result.data,
+        pagination: result.pagination,
+    };
+    res.json(response);
+});
+UserController.assignCourseToUser = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { userId, courseId } = req.body;
+    const adminId = req.user.id;
+    const enrollment = await user_service_1.UserService.assignCourseToUser(userId, courseId, adminId);
+    const response = {
+        success: true,
+        message: 'Course assigned to user successfully',
+        data: enrollment,
+    };
+    res.json(response);
+});
+UserController.removeCourseFromUser = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { userId, courseId } = req.params;
+    await user_service_1.UserService.removeCourseFromUser(userId, courseId);
+    const response = {
+        success: true,
+        message: 'Course assignment removed successfully',
+    };
+    res.json(response);
+});
+UserController.getUserAssignedCourses = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { userId } = req.params;
+    const currentUserId = req.user.id;
+    const isAdmin = req.user.role === types_1.UserRole.ADMIN;
+    if (currentUserId !== userId && !isAdmin) {
+        const response = {
+            success: false,
+            message: 'Access denied. You can only view your own assigned courses.',
+        };
+        return res.status(403).json(response);
+    }
+    const courses = await user_service_1.UserService.getUserAssignedCourses(userId);
+    const response = {
+        success: true,
+        message: 'User assigned courses retrieved successfully',
+        data: courses,
+    };
+    return res.json(response);
+});
 //# sourceMappingURL=user.controller.js.map

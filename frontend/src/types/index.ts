@@ -19,6 +19,13 @@ export enum LessonStatus {
   COMPLETED = 'COMPLETED',
 }
 
+export enum LessonType {
+  TEXT = 'TEXT',
+  VIDEO = 'VIDEO',
+  QUIZ = 'QUIZ',
+  EXERCISE = 'EXERCISE',
+}
+
 // User types
 export interface User {
   id: string;
@@ -88,8 +95,11 @@ export interface Lesson {
   title: string;
   content: string;
   module_id: string;
+  moduleId: string; // Alias for module_id
   instructor_id: string;
   order_index: number;
+  lessonOrder: number; // Alias for order_index
+  lessonType: LessonType;
   created_at: Date;
   updated_at: Date;
   resources?: Resource[];

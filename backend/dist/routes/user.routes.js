@@ -97,5 +97,23 @@ router.get('/', paginationValidation, validate_1.validate, auth_1.checkAuth, aut
 router.put('/:userId', userIdValidation, updateUserValidation, validate_1.validate, auth_1.checkAuth, auth_1.checkAdmin, user_controller_1.UserController.updateUser);
 router.patch('/:userId/role', userIdValidation, updateRoleValidation, validate_1.validate, auth_1.checkAuth, auth_1.checkAdmin, user_controller_1.UserController.updateUserRole);
 router.delete('/:userId', userIdValidation, validate_1.validate, auth_1.checkAuth, auth_1.checkAdmin, user_controller_1.UserController.deleteUser);
+router.get('/instructors/list', paginationValidation, validate_1.validate, auth_1.checkAuth, auth_1.checkAdmin, user_controller_1.UserController.getAllInstructors);
+router.post('/assign-course', [
+    (0, express_validator_1.body)('userId')
+        .isUUID()
+        .withMessage('User ID must be a valid UUID'),
+    (0, express_validator_1.body)('courseId')
+        .isUUID()
+        .withMessage('Course ID must be a valid UUID'),
+], validate_1.validate, auth_1.checkAuth, auth_1.checkAdmin, user_controller_1.UserController.assignCourseToUser);
+router.delete('/:userId/courses/:courseId', [
+    (0, express_validator_1.param)('userId')
+        .isUUID()
+        .withMessage('User ID must be a valid UUID'),
+    (0, express_validator_1.param)('courseId')
+        .isUUID()
+        .withMessage('Course ID must be a valid UUID'),
+], validate_1.validate, auth_1.checkAuth, auth_1.checkAdmin, user_controller_1.UserController.removeCourseFromUser);
+router.get('/:userId/assigned-courses', userIdValidation, validate_1.validate, auth_1.checkAuth, user_controller_1.UserController.getUserAssignedCourses);
 exports.default = router;
 //# sourceMappingURL=user.routes.js.map

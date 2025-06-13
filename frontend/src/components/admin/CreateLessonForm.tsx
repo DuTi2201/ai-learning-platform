@@ -24,6 +24,8 @@ interface CreateLessonFormProps {
   open: boolean;
   onClose: () => void;
   onLessonCreated: () => void;
+  modules?: Module[];
+  selectedModuleId?: string | null;
 }
 
 interface FormData {
@@ -38,7 +40,9 @@ interface FormData {
 const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
   open,
   onClose,
-  onLessonCreated
+  onLessonCreated,
+  modules = [],
+  selectedModuleId
 }) => {
   const [formData, setFormData] = useState<FormData>({
     title: '',
@@ -50,7 +54,7 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
   });
   
   const [courses, setCourses] = useState<Course[]>([]);
-  const [modules, setModules] = useState<Module[]>([]);
+  const [availableModules, setAvailableModules] = useState<Module[]>([]);
   const [instructors, setInstructors] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +71,7 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
     if (formData.course_id) {
       loadModules(formData.course_id);
     } else {
-      setModules([]);
+      setAvailableModules([]);
       setFormData(prev => ({ ...prev, module_id: '' }));
     }
   }, [formData.course_id]);
@@ -85,7 +89,7 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
   const loadModules = async (courseId: string) => {
     try {
       const modules = await courseService.getCourseModules(courseId);
-      setModules(modules);
+      setAvailableModules(modules);
     } catch (error) {
       console.error('Error loading modules:', error);
       setError('Không thể tải danh sách module');
@@ -231,7 +235,7 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
                 label="Module"
                 disabled={loading || !formData.course_id}
               >
-                {modules.map((module) => (
+                {availableModules.map((module) => (
                   <MenuItem key={module.id} value={module.id}>
                     {module.title}
                   </MenuItem>

@@ -21,6 +21,7 @@ export interface EnrolledCourse {
   id: string;
   courseId: string;
   enrollmentDate: string;
+  enrollmentType: 'SELF_ENROLLED' | 'ADMIN_ASSIGNED';
   course: {
     id: string;
     courseCode: string;

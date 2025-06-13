@@ -23,9 +23,9 @@ api.interceptors.response.use(
 );
 
 export const moduleService = {
-  async getAllModules(): Promise<Module[]> {
+  async getAllModules(): Promise<{ data: Module[] }> {
     const response = await api.get<ApiResponse<Module[]>>('/modules');
-    return response.data.data;
+    return { data: response.data.data };
   },
 
   async createModule(moduleData: CreateModuleRequest): Promise<Module> {

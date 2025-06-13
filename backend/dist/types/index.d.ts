@@ -1,6 +1,6 @@
 import { Request } from 'express';
-import { UserRole, ResourceType, LessonStatus } from '../generated/prisma';
-export { UserRole, ResourceType, LessonStatus };
+import { UserRole, ResourceType, LessonStatus, EnrollmentType } from '../generated/prisma';
+export { UserRole, ResourceType, LessonStatus, EnrollmentType };
 declare global {
     namespace Express {
         interface User {
@@ -49,9 +49,8 @@ export interface LoginResponse {
     token: string;
 }
 export interface CreateCourseRequest {
-    courseCode: string;
     title: string;
-    description?: string;
+    description: string;
 }
 export interface UpdateCourseRequest {
     courseCode?: string;

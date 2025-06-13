@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { prisma } from '../config/database';
-import { AppError } from '../types';
+import { AppError, UserRole } from '../types';
 import { asyncHandler } from './errorHandler';
 
 // Extend Request interface to include user
@@ -14,7 +14,7 @@ declare global {
         email: string;
         fullName: string;
         profilePictureUrl: string | null;
-        role: 'ADMIN' | 'USER';
+        role: UserRole;
         createdAt: Date;
       };
     }

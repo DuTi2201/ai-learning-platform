@@ -63,6 +63,7 @@ router.get('/course/:courseId', auth_1.optionalAuth, courseIdValidation, validat
 router.get('/:moduleId', auth_1.optionalAuth, moduleIdValidation, validate_1.validate, module_controller_1.ModuleController.getModuleById);
 router.use(auth_1.checkAuth);
 router.use(auth_1.checkAdmin);
+router.get('/', module_controller_1.ModuleController.getAllModules);
 router.post('/', createModuleValidation, validate_1.validate, module_controller_1.ModuleController.createModule);
 router.put('/:moduleId', moduleIdValidation, updateModuleValidation, validate_1.validate, module_controller_1.ModuleController.updateModule);
 router.delete('/:moduleId', moduleIdValidation, validate_1.validate, module_controller_1.ModuleController.deleteModule);

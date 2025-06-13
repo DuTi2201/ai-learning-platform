@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 export declare class ModuleController {
+    static getAllModules: (req: Request, res: Response, next: import("express").NextFunction) => void;
     static getModulesByCourse: (req: Request, res: Response, next: import("express").NextFunction) => void;
     static getModuleById: (req: Request, res: Response, next: import("express").NextFunction) => void;
     static createModule: (req: Request, res: Response, next: import("express").NextFunction) => void;

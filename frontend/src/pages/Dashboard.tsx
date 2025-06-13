@@ -216,9 +216,17 @@ export const Dashboard: React.FC = () => {
               <CourseProgress key={course.id}>
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      {course.course.title}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        {course.course.title}
+                      </Typography>
+                      <Chip
+                        label={course.enrollmentType === 'ADMIN_ASSIGNED' ? 'Được gán' : 'Tự đăng ký'}
+                        size="small"
+                        color={course.enrollmentType === 'ADMIN_ASSIGNED' ? 'secondary' : 'primary'}
+                        variant="outlined"
+                      />
+                    </Box>
                     <Chip
                       label={`${course.progress}%`}
                       size="small"

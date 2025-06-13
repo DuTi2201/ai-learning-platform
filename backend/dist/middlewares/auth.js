@@ -47,9 +47,15 @@ exports.checkAuth = (0, errorHandler_1.asyncHandler)(async (req, res, next) => {
         token = req.cookies.token;
     }
     else if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+        console.log('User authenticated via session:', req.user);
         req.user = req.user;
         return next();
     }
+    console.log('No authentication found:');
+    console.log('- Authorization header:', req.headers.authorization);
+    console.log('- Cookie token:', req.cookies?.token);
+    console.log('- Session authenticated:', req.isAuthenticated?.());
+    console.log('- Session user:', req.user);
     if (!token) {
         throw new types_1.AppError('Access denied. No token provided.', 401);
     }

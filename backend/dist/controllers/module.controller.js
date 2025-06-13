@@ -8,6 +8,15 @@ class ModuleController {
 }
 exports.ModuleController = ModuleController;
 _a = ModuleController;
+ModuleController.getAllModules = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const modules = await module_service_1.ModuleService.getAllModules();
+    const response = {
+        success: true,
+        message: 'All modules retrieved successfully',
+        data: modules,
+    };
+    res.json(response);
+});
 ModuleController.getModulesByCourse = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { courseId } = req.params;
     const userId = req.user?.id;

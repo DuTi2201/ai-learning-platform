@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { UserRole } from '../types';
 declare global {
     namespace Express {
         interface Request {
@@ -8,7 +9,7 @@ declare global {
                 email: string;
                 fullName: string;
                 profilePictureUrl: string | null;
-                role: 'ADMIN' | 'USER';
+                role: UserRole;
                 createdAt: Date;
             };
         }

@@ -14,11 +14,10 @@ import { Dashboard } from './pages/Dashboard';
 import { Profile } from './pages/Profile';
 import { AuthCallback } from './pages/AuthCallback';
 import AdminDashboard from './pages/AdminDashboard';
-import CourseManagement from './pages/admin/CourseManagement';
-import ModuleManagement from './pages/admin/ModuleManagement';
-import LessonManagement from './pages/admin/LessonManagement';
-import ResourceManagement from './pages/admin/ResourceManagement';
-import UserManagement from './pages/admin/UserManagement';
+import CourseManagementPage from './pages/admin/CourseManagementPage';
+import ModuleManagementPage from './pages/admin/ModuleManagementPage';
+import LessonManagementPage from './pages/admin/LessonManagementPage';
+import UserManagementPage from './pages/admin/UserManagementPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -96,27 +95,22 @@ const AppRoutes: React.FC = () => {
             } />
             <Route path="/admin/courses" element={
               <AdminRoute>
-                <CourseManagement />
+                <CourseManagementPage />
               </AdminRoute>
             } />
             <Route path="/admin/modules" element={
               <AdminRoute>
-                <ModuleManagement />
+                <ModuleManagementPage />
               </AdminRoute>
             } />
             <Route path="/admin/lessons" element={
               <AdminRoute>
-                <LessonManagement />
-              </AdminRoute>
-            } />
-            <Route path="/admin/resources" element={
-              <AdminRoute>
-                <ResourceManagement />
+                <LessonManagementPage />
               </AdminRoute>
             } />
             <Route path="/admin/users" element={
               <AdminRoute>
-                <UserManagement />
+                <UserManagementPage />
               </AdminRoute>
             } />
         <Route path="*" element={<Navigate to="/" replace />} />

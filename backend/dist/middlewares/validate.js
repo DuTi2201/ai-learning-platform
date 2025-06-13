@@ -6,6 +6,8 @@ const types_1 = require("../types");
 const validate = (req, res, next) => {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
+        console.log('Validation errors:', errors.array());
+        console.log('Request body:', req.body);
         const errorMessages = errors.array().map(error => ({
             field: error.type === 'field' ? error.path : 'unknown',
             message: error.msg,

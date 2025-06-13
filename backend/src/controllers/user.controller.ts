@@ -249,4 +249,101 @@ export class UserController {
 
     return res.json(response);
   });
+
+  // Get all users (Admin only)
+  static getAllUsers = asyncHandler(async (req: Request, res: Response) => {
+    const { page = 1, limit = 10, search, role } = req.query;
+    
+    const result = await UserService.getAllUsers({
+      page: parseInt(page as string),
+      limit: parseInt(limit as string),
+      search: search as string,
+      role: role as string,
+    });
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Users retrieved successfully',
+      data: result.data,
+      pagination: result.pagination,
+    };
+
+    res.json(response);
+  });
+
+  // Get all instructors (Admin only)
+  static getAllInstructors = asyncHandler(async (req: Request, res: Response) => {
+    const { page = 1, limit = 10, search } = req.query;
+    
+    const result = await UserService.getAllInstructors({
+      page: parseInt(page as string),
+      limit: parseInt(limit as string),
+      search: search as string,
+    });
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Instructors retrieved successfully',
+      data: result.data,
+      pagination: result.pagination,
+    };
+
+    res.json(response);
+  });
+
+  // Assign course to user (Admin only)
+  static assignCourseToUser = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { userId, courseId } = req.body;
+    const adminId = req.user!.id;
+
+    const enrollment = await UserService.assignCourseToUser(userId, courseId, adminId);
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Course assigned to user successfully',
+      data: enrollment,
+    };
+
+    res.json(response);
+  });
+
+  // Remove course assignment from user (Admin only)
+  static removeCourseFromUser = asyncHandler(async (req: Request, res: Response) => {
+    const { userId, courseId } = req.params;
+
+    await UserService.removeCourseFromUser(userId, courseId);
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Course assignment removed successfully',
+    };
+
+    res.json(response);
+  });
+
+  // Get user's assigned courses (different from enrolled courses)
+  static getUserAssignedCourses = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { userId } = req.params;
+    const currentUserId = req.user!.id;
+    const isAdmin = req.user!.role === UserRole.ADMIN;
+
+    // Check if user can access this data
+    if (currentUserId !== userId && !isAdmin) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Access denied. You can only view your own assigned courses.',
+      };
+      return res.status(403).json(response);
+    }
+    
+    const courses = await UserService.getUserAssignedCourses(userId);
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'User assigned courses retrieved successfully',
+      data: courses,
+    };
+
+    return res.json(response);
+  });
 }

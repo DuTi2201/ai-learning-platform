@@ -1,8 +1,8 @@
 import { Request } from 'express';
-import { UserRole, ResourceType, LessonStatus } from '../generated/prisma';
+import { UserRole, ResourceType, LessonStatus, EnrollmentType } from '../generated/prisma';
 
 // Re-export enums
-export { UserRole, ResourceType, LessonStatus };
+export { UserRole, ResourceType, LessonStatus, EnrollmentType };
 
 // Extend Express Request type to include user
 declare global {
