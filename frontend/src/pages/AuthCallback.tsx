@@ -23,8 +23,13 @@ export const AuthCallback: React.FC = () => {
         // Wait a moment for the cookie to be set
         setTimeout(async () => {
           try {
-            await checkAuthStatus();
-            navigate('/dashboard');
+            const userData = await checkAuthStatus();
+            // Navigate based on user role
+            if (userData && userData.role === 'ADMIN') {
+              navigate('/admin');
+            } else {
+              navigate('/dashboard');
+            }
           } catch (error) {
             console.error('Failed to check auth status:', error);
             navigate('/?error=auth_failed');
