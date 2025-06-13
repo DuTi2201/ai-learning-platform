@@ -35,10 +35,14 @@ export const Profile: React.FC = () => {
 
   if (!user) {
     return (
-      <Layout>
-        <Container maxWidth="md" sx={{ py: 4 }}>
-          {/* Header đã được xóa theo yêu cầu */}
-        </Container>
+      <Layout maxWidth="md">
+        <StyledPaper>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+            <Typography variant="body1" color="text.secondary">
+              Đang tải thông tin người dùng...
+            </Typography>
+          </Box>
+        </StyledPaper>
       </Layout>
     );
   }
