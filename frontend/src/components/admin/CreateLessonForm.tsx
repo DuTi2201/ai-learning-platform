@@ -12,13 +12,12 @@ import {
   MenuItem,
   Box,
   Alert,
-  CircularProgress,
-  Typography
+  CircularProgress
 } from '@mui/material';
 import { SelectChangeEvent } from '@mui/material/Select';
 import { courseService } from '../../services/courseService';
 import { lessonService } from '../../services/lessonService';
-import { Course, Module, CreateLessonRequest } from '../../types';
+import { Course, Module, CreateLessonRequest, Lesson } from '../../types';
 
 interface CreateLessonFormProps {
   open: boolean;
@@ -26,6 +25,7 @@ interface CreateLessonFormProps {
   onLessonCreated: () => void;
   modules?: Module[];
   selectedModuleId?: string | null;
+  editingLesson?: Lesson | null;
 }
 
 interface FormData {
@@ -42,7 +42,8 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
   onClose,
   onLessonCreated,
   modules = [],
-  selectedModuleId
+  selectedModuleId,
+  editingLesson
 }) => {
   const [formData, setFormData] = useState<FormData>({
     title: '',
@@ -64,8 +65,31 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
     if (open) {
       loadCourses();
       loadInstructors();
+      
+      // If editing, populate form with lesson data
+      if (editingLesson) {
+        const module = modules.find(m => m.id === editingLesson.module_id);
+        setFormData({
+          title: editingLesson.title,
+          content: editingLesson.content || '',
+          course_id: module?.courseId || '',
+          module_id: editingLesson.module_id,
+          instructor_id: editingLesson.instructor_id || '',
+          order_index: editingLesson.order_index || 1
+        });
+      } else {
+        // Reset form for new lesson
+        setFormData({
+          title: '',
+          content: '',
+          course_id: '',
+          module_id: selectedModuleId || '',
+          instructor_id: '',
+          order_index: 1
+        });
+      }
     }
-  }, [open]);
+  }, [open, editingLesson, modules, selectedModuleId]);
 
   useEffect(() => {
     if (formData.course_id) {
@@ -138,16 +162,31 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
     setError(null);
 
     try {
-      const lessonData: CreateLessonRequest = {
-        title: formData.title,
-        description: formData.content,
-        moduleId: formData.module_id,
-        instructorId: formData.instructor_id,
-        lessonOrder: formData.order_index
-      };
+      if (editingLesson) {
+        // Update existing lesson
+        const updateData = {
+          title: formData.title,
+          description: formData.content,
+          moduleId: formData.module_id,
+          instructorId: formData.instructor_id,
+          lessonOrder: formData.order_index
+        };
 
-      await lessonService.createLesson(lessonData);
-      setSuccess(true);
+        await lessonService.updateLesson(editingLesson.id, updateData);
+        setSuccess(true);
+      } else {
+        // Create new lesson
+        const lessonData: CreateLessonRequest = {
+          title: formData.title,
+          description: formData.content,
+          moduleId: formData.module_id,
+          instructorId: formData.instructor_id,
+          lessonOrder: formData.order_index
+        };
+
+        await lessonService.createLesson(lessonData);
+        setSuccess(true);
+      }
       
       // Reset form
       setFormData({
@@ -167,8 +206,8 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
       }, 2000);
       
     } catch (error: any) {
-      console.error('Error creating lesson:', error);
-      setError(error.response?.data?.message || 'Có lỗi xảy ra khi tạo bài học');
+      console.error('Error saving lesson:', error);
+      setError(error.response?.data?.message || `Có lỗi xảy ra khi ${editingLesson ? 'cập nhật' : 'tạo'} bài học`);
     } finally {
       setLoading(false);
     }
@@ -195,7 +234,7 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        Tạo bài học mới
+        {editingLesson ? 'Chỉnh sửa bài học' : 'Tạo bài học mới'}
       </DialogTitle>
       
       <form onSubmit={handleSubmit}>
@@ -208,7 +247,7 @@ const CreateLessonForm: React.FC<CreateLessonFormProps> = ({
           
           {success && (
             <Alert severity="success" sx={{ mb: 2 }}>
-              Tạo bài học thành công! Đang đóng form...
+              {editingLesson ? 'Cập nhật bài học thành công!' : 'Tạo bài học thành công!'} Đang đóng form...
             </Alert>
           )}
 

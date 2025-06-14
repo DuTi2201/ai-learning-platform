@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -11,6 +11,13 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Card as MuiCard,
+  CardContent,
+  IconButton,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -22,6 +29,7 @@ import {
   Person,
   Star,
   School,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useParams } from 'react-router-dom';
@@ -68,30 +76,35 @@ const StatItem = styled(Box)(({ theme }) => ({
 
 
 export const CourseDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { courseId } = useParams<{ courseId: string }>();
+  const [selectedLesson, setSelectedLesson] = useState<any>(null);
+  const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
 
-  const {
-    data: course,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['course', id],
-    queryFn: () => courseService.getCourseById(id!),
-    enabled: !!id,
+  const { data: course, isLoading, error } = useQuery({
+    queryKey: ['course', courseId],
+    queryFn: () => courseService.getCourseById(courseId!),
+    enabled: !!courseId,
   });
 
+  const handleLessonClick = (lesson: any) => {
+    setSelectedLesson(lesson);
+    setLessonDialogOpen(true);
+  };
+
+  const handleCloseLessonDialog = () => {
+    setLessonDialogOpen(false);
+    setSelectedLesson(null);
+  };
+
   if (isLoading) {
-    return <LoadingSpinner size="large" message="Đang tải thông tin khóa học..." />;
+    return <LoadingSpinner />;
   }
 
   if (error || !course) {
     return (
-      <Box textAlign="center" py={4}>
-        <Typography variant="h6" color="error" gutterBottom>
+      <Box sx={{ textAlign: 'center', py: 8 }}>
+        <Typography variant="h6" color="error">
           Không thể tải thông tin khóa học
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Khóa học không tồn tại hoặc đã bị xóa
         </Typography>
       </Box>
     );
@@ -185,7 +198,18 @@ export const CourseDetail: React.FC = () => {
                     {module.lessons && module.lessons.length > 0 && (
                       <List dense>
                         {module.lessons.map((lesson, lessonIndex) => (
-                          <ListItem key={lesson.id} sx={{ pl: 0 }}>
+                          <ListItem 
+                            key={lesson.id} 
+                            sx={{ 
+                              pl: 0, 
+                              cursor: 'pointer',
+                              borderRadius: 1,
+                              '&:hover': {
+                                backgroundColor: 'action.hover'
+                              }
+                            }}
+                            onClick={() => handleLessonClick(lesson)}
+                          >
                             <ListItemIcon>
                               <PlayCircleOutline color="primary" />
                             </ListItemIcon>
@@ -227,14 +251,14 @@ export const CourseDetail: React.FC = () => {
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 Thời lượng
               </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              <Typography variant="body1">
                 {course.duration || 'Chưa xác định'}
               </Typography>
             </Box>
             
             <Box sx={{ mb: 3 }}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                Độ khó
+                Cấp độ
               </Typography>
               <Chip
                 label={course.level}
@@ -245,16 +269,145 @@ export const CourseDetail: React.FC = () => {
             
             <Divider sx={{ my: 3 }} />
             
-            <Button variant="primary" fullWidth size="large">
-              Đăng ký khóa học
-            </Button>
-            
-            <Button variant="outline" fullWidth size="large" sx={{ mt: 2 }}>
-              Thêm vào danh sách yêu thích
-            </Button>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Button variant="primary" fullWidth>
+                Đăng ký khóa học
+              </Button>
+              <Button variant="outline" fullWidth>
+                Thêm vào danh sách yêu thích
+              </Button>
+            </Box>
           </Card>
         </Grid>
       </Grid>
+
+      {/* LessonDetailDialog */}
+      <Dialog
+        open={lessonDialogOpen}
+        onClose={handleCloseLessonDialog}
+        maxWidth="lg"
+        fullWidth
+        aria-labelledby="lesson-dialog-title"
+      >
+        <DialogTitle id="lesson-dialog-title">
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">
+              {selectedLesson?.title}
+            </Typography>
+            <IconButton onClick={handleCloseLessonDialog}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {selectedLesson && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Lesson Information */}
+              <MuiCard>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Thông tin bài học
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid size={{xs: 12, md: 6}}>
+                      <Typography variant="body2" color="text.secondary">
+                        Loại bài học:
+                      </Typography>
+                      <Chip 
+                        label={selectedLesson.lessonType || 'TEXT'} 
+                        size="small" 
+                        color={selectedLesson.lessonType === 'VIDEO' ? 'primary' : 'secondary'}
+                      />
+                    </Grid>
+                    <Grid size={{xs: 12, md: 6}}>
+                      <Typography variant="body2" color="text.secondary">
+                        Thứ tự:
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedLesson.order_index}
+                      </Typography>
+                    </Grid>
+                    <Grid size={{xs: 12}}>
+                      <Typography variant="body2" color="text.secondary">
+                        Nội dung:
+                      </Typography>
+                      <Typography variant="body1" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>
+                        {selectedLesson.content}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </MuiCard>
+
+              {/* Resources Section */}
+              <MuiCard>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Tài nguyên đính kèm ({selectedLesson.resources?.length || 0})
+                  </Typography>
+                  
+                  {!selectedLesson.resources || selectedLesson.resources.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+                      Chưa có tài nguyên nào được thêm vào bài học này.
+                    </Typography>
+                  ) : (
+                    <Grid container spacing={2}>
+                      {selectedLesson.resources.map((resource: any) => (
+                        <Grid size={{xs: 12, md: 6}} key={resource.id}>
+                          <MuiCard variant="outlined">
+                            <CardContent>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography variant="subtitle1" gutterBottom>
+                                    {resource.title}
+                                  </Typography>
+                                  <Chip 
+                                    label={resource.resourceType} 
+                                    size="small" 
+                                    color="primary" 
+                                    sx={{ mb: 1 }}
+                                  />
+                                  <Typography 
+                                    variant="body2" 
+                                    color="primary" 
+                                    sx={{ 
+                                      cursor: 'pointer',
+                                      textDecoration: 'underline',
+                                      '&:hover': {
+                                        textDecoration: 'none'
+                                      }
+                                    }}
+                                    onClick={() => window.open(resource.url, '_blank')}
+                                  >
+                                    Mở tài liệu
+                                  </Typography>
+                                </Box>
+                                <IconButton 
+                                  size="small"
+                                  onClick={() => window.open(resource.url, '_blank')}
+                                >
+                                  <LinkIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            </CardContent>
+                          </MuiCard>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  )}
+                </CardContent>
+              </MuiCard>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseLessonDialog}>
+            Đóng
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
+
+export default CourseDetail;

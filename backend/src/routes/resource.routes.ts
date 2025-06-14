@@ -27,14 +27,10 @@ const createResourceValidation = [
     .withMessage('Title is required')
     .isLength({ max: 255 })
     .withMessage('Title must not exceed 255 characters'),
-  body('description')
-    .optional()
-    .trim()
-    .isLength({ max: 1000 })
-    .withMessage('Description must not exceed 1000 characters'),
+
   body('resourceType')
     .isIn(Object.values(ResourceType))
-    .withMessage('Type must be one of: PDF, QUIZ, LINK, RECORDING'),
+    .withMessage('Type must be one of: DOCUMENT, VIDEO, LINK, FILE'),
   body('url')
     .optional()
     .trim()

@@ -37,7 +37,6 @@ interface ResourceData {
   title: string;
   type: ResourceType;
   url: string;
-  description: string;
   lesson_id: string;
 }
 
@@ -51,7 +50,6 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
     title: '',
     type: ResourceType.DOCUMENT,
     url: '',
-    description: '',
     lesson_id: lessonId || ''
   });
   
@@ -63,8 +61,7 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
   const [bulkResources, setBulkResources] = useState<Omit<ResourceData, 'lesson_id'>[]>([{
     title: '',
     type: ResourceType.DOCUMENT,
-    url: '',
-    description: ''
+    url: ''
   }]);
 
   useEffect(() => {
@@ -106,8 +103,7 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
     setBulkResources(prev => [...prev, {
       title: '',
       type: ResourceType.DOCUMENT,
-      url: '',
-      description: ''
+      url: ''
     }]);
   };
 
@@ -138,7 +134,6 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
           title: resource.title,
           resourceType: resource.type,
           url: resource.url,
-          description: resource.description,
           lessonId: formData.lesson_id
         }));
 
@@ -149,8 +144,7 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
         setBulkResources([{
           title: '',
           type: ResourceType.DOCUMENT,
-          url: '',
-          description: ''
+          url: ''
         }]);
       } else {
         // Single resource create
@@ -158,7 +152,6 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
           title: formData.title,
           resourceType: formData.type,
           url: formData.url,
-          description: formData.description,
           lessonId: formData.lesson_id
         };
 
@@ -170,7 +163,7 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
           title: '',
           type: ResourceType.DOCUMENT,
           url: '',
-          description: '',
+         
           lesson_id: lessonId || ''
         });
       }
@@ -196,14 +189,12 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
         title: '',
         type: ResourceType.DOCUMENT,
         url: '',
-        description: '',
         lesson_id: lessonId || ''
       });
       setBulkResources([{
         title: '',
         type: ResourceType.DOCUMENT,
-        url: '',
-        description: ''
+        url: ''
       }]);
       setError(null);
       setSuccess(false);
@@ -220,8 +211,7 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
     { value: 'VIDEO', label: 'Video' },
     { value: 'DOCUMENT', label: 'Tài liệu' },
     { value: 'LINK', label: 'Liên kết' },
-    { value: 'EXERCISE', label: 'Bài tập' },
-    { value: 'QUIZ', label: 'Bài kiểm tra' }
+    { value: 'FILE', label: 'Tệp tin' }
   ];
 
   return (
@@ -333,16 +323,6 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
                         disabled={loading}
                         placeholder="https://..."
                       />
-                      
-                      <TextField
-                        label="Mô tả"
-                        value={resource.description}
-                        onChange={(e) => handleBulkInputChange(index, 'description', e.target.value)}
-                        fullWidth
-                        multiline
-                        rows={2}
-                        disabled={loading}
-                      />
                     </Box>
                   </Box>
                 ))}
@@ -397,18 +377,6 @@ const ResourceForm: React.FC<ResourceFormProps> = ({
                   disabled={loading}
                   placeholder="https://..."
                   helperText="Đường dẫn đến tài nguyên (video, tài liệu, link...)"
-                />
-
-                <TextField
-                  name="description"
-                  label="Mô tả"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  fullWidth
-                  multiline
-                  rows={3}
-                  disabled={loading}
-                  placeholder="Mô tả chi tiết về tài nguyên"
                 />
               </>
             )}

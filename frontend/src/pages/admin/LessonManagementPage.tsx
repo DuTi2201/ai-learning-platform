@@ -9,17 +9,19 @@ import {
   Button,
   TextField,
   InputAdornment,
-  Fade,
   Grow,
-  CardActions,
   Tooltip,
   Chip,
   IconButton,
   Skeleton,
   FormControl,
-  InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -31,7 +33,8 @@ import {
   Refresh as RefreshIcon,
   Preview as PreviewIcon,
   AttachFile as AttachFileIcon,
-  PlayArrow as PlayIcon
+  PlayArrow as PlayIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -40,6 +43,7 @@ import ResourceForm from '../../components/admin/ResourceForm';
 import { lessonService } from '../../services/lessonService';
 import { moduleService } from '../../services/moduleService';
 import { courseService } from '../../services/courseService';
+import { resourceService } from '../../services/resourceService';
 import { Lesson, Module, Course } from '../../types';
 
 const LessonManagementPage: React.FC = () => {
@@ -57,6 +61,12 @@ const LessonManagementPage: React.FC = () => {
   const [resourceFormOpen, setResourceFormOpen] = useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(searchParams.get('moduleId'));
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [lessonToDelete, setLessonToDelete] = useState<Lesson | null>(null);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewingLesson, setPreviewingLesson] = useState<Lesson | null>(null);
+  const [lessonResources, setLessonResources] = useState<any[]>([]);
 
   useEffect(() => {
     loadData();
@@ -76,6 +86,21 @@ const LessonManagementPage: React.FC = () => {
         moduleService.getAllModules(),
         courseService.getAllCourses()
       ]);
+      
+      console.log('Lessons response:', lessonsResponse);
+      console.log('Modules response:', modulesResponse);
+      console.log('Courses response:', coursesResponse);
+      
+      // Debug individual items
+      if (modulesResponse.data && modulesResponse.data.length > 0) {
+        console.log('First module structure:', modulesResponse.data[0]);
+      }
+      if (coursesResponse.data && coursesResponse.data.length > 0) {
+        console.log('First course structure:', coursesResponse.data[0]);
+      }
+      if (lessonsResponse && lessonsResponse.length > 0) {
+        console.log('First lesson structure:', lessonsResponse[0]);
+      }
       
       setLessons(lessonsResponse);
       setModules(modulesResponse.data);
@@ -125,6 +150,75 @@ const LessonManagementPage: React.FC = () => {
   const handleAddResource = (lessonId: string) => {
     setSelectedLessonId(lessonId);
     setResourceFormOpen(true);
+  };
+
+  const handleEditLesson = (lesson: Lesson) => {
+    setEditingLesson(lesson);
+    setSelectedModuleId(lesson.module_id);
+    setLessonFormOpen(true);
+  };
+
+  const handlePreviewLesson = async (lesson: Lesson) => {
+    try {
+      setPreviewingLesson(lesson);
+      // Load resources for this lesson
+      const resources = await resourceService.getResourcesByLessonId(lesson.id);
+      setLessonResources(resources);
+      setPreviewDialogOpen(true);
+    } catch (error) {
+      console.error('Error loading lesson resources:', error);
+      setLessonResources([]);
+      setPreviewDialogOpen(true);
+    }
+  };
+
+  const handleClosePreviewDialog = () => {
+    setPreviewDialogOpen(false);
+    setPreviewingLesson(null);
+    setLessonResources([]);
+  };
+
+  const handleResourceUpdated = async () => {
+    if (previewingLesson) {
+      try {
+        const resources = await resourceService.getResourcesByLessonId(previewingLesson.id);
+        setLessonResources(resources);
+      } catch (error) {
+        console.error('Error reloading lesson resources:', error);
+      }
+    }
+  };
+
+  const handleDeleteResource = async (resourceId: string) => {
+    try {
+      await resourceService.deleteResource(resourceId);
+      await handleResourceUpdated();
+    } catch (error) {
+      console.error('Error deleting resource:', error);
+    }
+  };
+
+  const handleDeleteLesson = (lesson: Lesson) => {
+    setLessonToDelete(lesson);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteLesson = async () => {
+    if (!lessonToDelete) return;
+    
+    try {
+      await lessonService.deleteLesson(lessonToDelete.id);
+      setDeleteConfirmOpen(false);
+      setLessonToDelete(null);
+      loadData();
+    } catch (error) {
+      console.error('Error deleting lesson:', error);
+    }
+  };
+
+  const cancelDeleteLesson = () => {
+    setDeleteConfirmOpen(false);
+    setLessonToDelete(null);
   };
 
   const filteredModules = selectedCourseFilter === 'all' 
@@ -430,9 +524,29 @@ const LessonManagementPage: React.FC = () => {
             </Card>
           ) : (
             <Grid container spacing={3}>
-              {filteredLessons.map((lesson, index) => {
-                const module = modules.find(m => m.id === lesson.module_id);
-                const course = courses.find(c => c.id === module?.courseId);
+              {filteredLessons.map((lesson: any, index) => {
+                // Try to get module and course from lesson data first (if included)
+                const lessonModule = lesson.module;
+                const lessonCourse = lessonModule?.course;
+                
+                // Fallback to finding in separate arrays
+                const module = lessonModule || modules.find(m => m.id === lesson.moduleId || m.id === lesson.module_id);
+                const course = lessonCourse || courses.find(c => {
+                  if (module && 'courseId' in module) {
+                    return c.id === module.courseId;
+                  }
+                  return false;
+                });
+                
+                // Debug logs for first lesson
+                if (index === 0) {
+                  console.log('Debug lesson mapping:');
+                  console.log('Lesson:', lesson);
+                  console.log('Lesson module:', lessonModule);
+                  console.log('Lesson course:', lessonCourse);
+                  console.log('Found module:', module);
+                  console.log('Found course:', course);
+                }
                 
                 return (
                   <Grid size={{xs:12, sm:6, md:4}} key={lesson.id}>
@@ -485,10 +599,10 @@ const LessonManagementPage: React.FC = () => {
                             {lesson.title}
                           </Typography>
                           <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                            Module: {module?.title || 'N/A'}
+                            Module: {lesson.module?.title || module?.title || 'N/A'}
                           </Typography>
                           <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                            Khóa học: {course?.title || 'N/A'}
+                            Khóa học: {lesson.module?.course?.title || course?.title || 'N/A'}
                           </Typography>
                           <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                             <Chip 
@@ -510,16 +624,17 @@ const LessonManagementPage: React.FC = () => {
                                 <IconButton 
                                   size="small" 
                                   color="primary"
-                                  onClick={() => {
-                                    setSelectedModuleId(lesson.module_id);
-                                    setLessonFormOpen(true);
-                                  }}
+                                  onClick={() => handleEditLesson(lesson)}
                                 >
                                   <EditIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
                               <Tooltip title="Xem trước">
-                                <IconButton size="small" color="info">
+                                <IconButton 
+                                  size="small" 
+                                  color="info"
+                                  onClick={() => handlePreviewLesson(lesson)}
+                                >
                                   <PreviewIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
@@ -533,7 +648,11 @@ const LessonManagementPage: React.FC = () => {
                                 </IconButton>
                               </Tooltip>
                               <Tooltip title="Xóa">
-                                <IconButton size="small" color="error">
+                                <IconButton 
+                                  size="small" 
+                                  color="error"
+                                  onClick={() => handleDeleteLesson(lesson)}
+                                >
                                   <DeleteIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
@@ -553,19 +672,213 @@ const LessonManagementPage: React.FC = () => {
       {/* Create Lesson Modal */}
       <CreateLessonForm
         open={lessonFormOpen}
-        onClose={() => setLessonFormOpen(false)}
+        onClose={() => {
+          setLessonFormOpen(false);
+          setEditingLesson(null);
+        }}
         onLessonCreated={handleLessonCreated}
         modules={modules}
         selectedModuleId={selectedModuleId}
+        editingLesson={editingLesson}
       />
 
       {/* Resource Form Modal */}
       <ResourceForm
         open={resourceFormOpen}
         onClose={() => setResourceFormOpen(false)}
-        onResourceCreated={handleResourceAdded}
+        onResourceCreated={() => {
+          handleResourceAdded();
+          if (previewDialogOpen) {
+            handleResourceUpdated();
+          }
+        }}
         lessonId={selectedLessonId}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={cancelDeleteLesson}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Xác nhận xóa bài học
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Bạn có chắc chắn muốn xóa bài học "{lessonToDelete?.title}"? 
+            Hành động này không thể hoàn tác.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDeleteLesson} color="primary">
+            Hủy
+          </Button>
+          <Button onClick={confirmDeleteLesson} color="error" variant="contained">
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Lesson Preview Dialog */}
+      <Dialog
+        open={previewDialogOpen}
+        onClose={handleClosePreviewDialog}
+        maxWidth="lg"
+        fullWidth
+        aria-labelledby="preview-dialog-title"
+      >
+        <DialogTitle id="preview-dialog-title">
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">
+              Xem trước bài học: {previewingLesson?.title}
+            </Typography>
+            <IconButton onClick={handleClosePreviewDialog}>
+               <CloseIcon />
+             </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {previewingLesson && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Lesson Information */}
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Thông tin bài học
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid size = {{xs: 12, md: 6}}>
+                      <Typography variant="body2" color="text.secondary">
+                        Tiêu đề:
+                      </Typography>
+                      <Typography variant="body1">
+                        {previewingLesson.title}
+                      </Typography>
+                    </Grid>
+                    <Grid size={{xs: 12, md: 6}}>
+                      <Typography variant="body2" color="text.secondary">
+                        Loại:
+                      </Typography>
+                      <Chip 
+                        label={previewingLesson.lessonType || 'TEXT'} 
+                        size="small" 
+                        color={previewingLesson.lessonType === 'VIDEO' ? 'primary' : 'secondary'}
+                      />
+                    </Grid>
+                    <Grid size={{xs: 12, md: 6}}>
+                      <Typography variant="body2" color="text.secondary">
+                        Thứ tự:
+                      </Typography>
+                      <Typography variant="body1">
+                        {previewingLesson.order_index}
+                      </Typography>
+                    </Grid>
+                    <Grid size={{xs: 12, md: 6}}>
+                      <Typography variant="body2" color="text.secondary">
+                        Module:
+                      </Typography>
+                      <Typography variant="body1">
+                        {modules.find(m => m.id === previewingLesson.module_id)?.title || 'N/A'}
+                      </Typography>
+                    </Grid>
+                    <Grid size={{xs: 12}}>
+                      <Typography variant="body2" color="text.secondary">
+                        Nội dung:
+                      </Typography>
+                      <Typography variant="body1" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>
+                        {previewingLesson.content}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+
+              {/* Resources Section */}
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">
+                      Tài nguyên đính kèm ({lessonResources.length})
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => {
+                        setSelectedLessonId(previewingLesson.id);
+                        setResourceFormOpen(true);
+                      }}
+                    >
+                      Thêm tài nguyên
+                    </Button>
+                  </Box>
+                  
+                  {lessonResources.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+                      Chưa có tài nguyên nào được thêm vào bài học này.
+                    </Typography>
+                  ) : (
+                    <Grid container spacing={2}>
+                      {lessonResources.map((resource) => (
+                        <Grid size={{xs: 12, md: 6}} key={resource.id}>
+                          <Card variant="outlined">
+                            <CardContent>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography variant="subtitle1" gutterBottom>
+                                    {resource.title}
+                                  </Typography>
+                                  <Chip 
+                                    label={resource.type} 
+                                    size="small" 
+                                    color="primary" 
+                                    sx={{ mb: 1 }}
+                                  />
+                                  <Typography variant="body2" color="text.secondary">
+                                    {resource.url}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  <Tooltip title="Chỉnh sửa">
+                                    <IconButton 
+                                      size="small"
+                                      onClick={() => {
+                                        // TODO: Implement edit resource
+                                        console.log('Edit resource:', resource.id);
+                                      }}
+                                    >
+                                      <EditIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Xóa">
+                                    <IconButton 
+                                      size="small" 
+                                      color="error"
+                                      onClick={() => handleDeleteResource(resource.id)}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </Box>
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  )}
+                </CardContent>
+              </Card>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClosePreviewDialog}>
+            Đóng
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

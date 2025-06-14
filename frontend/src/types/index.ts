@@ -6,11 +6,10 @@ export enum UserRole {
 }
 
 export enum ResourceType {
-  VIDEO = 'VIDEO',
   DOCUMENT = 'DOCUMENT',
+  VIDEO = 'VIDEO',
   LINK = 'LINK',
-  EXERCISE = 'EXERCISE',
-  QUIZ = 'QUIZ',
+  FILE = 'FILE',
 }
 
 export enum LessonStatus {
@@ -103,6 +102,20 @@ export interface Lesson {
   created_at: Date;
   updated_at: Date;
   resources?: Resource[];
+  // Nested objects from API
+  module?: {
+    id: string;
+    title: string;
+    course?: {
+      id: string;
+      title: string;
+    };
+  };
+  instructor?: {
+    id: string;
+    fullName: string;
+    title?: string;
+  };
 }
 
 export interface CreateLessonRequest {
@@ -131,7 +144,6 @@ export interface CreateResourceRequest {
   resourceType: ResourceType;
   title: string;
   url: string;
-  description?: string;
   lessonId: string;
 }
 
